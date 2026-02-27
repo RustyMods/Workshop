@@ -192,10 +192,9 @@ public static class PaintMan
             comp.m_modifiedPaint[index] = true;
             comp.m_paintMask[index] = blendedColor;
 
-            if (paint.isBiomePaint && terrainColors != null && terrainColors.m_initialized)
+            if (paint.isBiomePaint && terrainColors != null)
             {
-                terrainColors.m_modifiedTerrain[index] = true;
-                terrainColors.m_terrainMask[index] = paint.GetBiomeColor();
+                terrainColors.SetBiomeColor(index, paint.GetBiomeColor());
             }
         }
     }

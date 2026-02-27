@@ -85,6 +85,13 @@ public class TerrainColors : MonoBehaviour
         }
     }
 
+    public void SetBiomeColor(int index, Color32 color)
+    {
+        if (!m_initialized) return;
+        m_modifiedTerrain[index] = true;
+        m_terrainMask[index] = color;
+    }
+
     public void ApplyToHeightmap(Heightmap hm)
     {
         if (!m_initialized) return;
