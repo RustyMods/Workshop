@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
 using HarmonyLib;
 using UnityEngine;
 
@@ -39,8 +41,8 @@ public static class PaintMan
             prefix: new HarmonyMethod(AccessTools.Method(typeof(PaintMan), nameof(Patch_TerrainComp_Load))));
         
         harmony.Patch(AccessTools.Method(typeof(Heightmap), nameof(Heightmap.RebuildRenderMesh)),
-            postfix: new HarmonyMethod(AccessTools.Method(typeof(PaintMan),
-                nameof(Patch_Heightmap_RebuildRenderMesh))));
+            transpiler: new HarmonyMethod(AccessTools.Method(typeof(PaintMan),
+                nameof(Transpile_Heightmap_RebuildRenderMesh))));
 
         harmony.Patch(AccessTools.Method(typeof(ClutterSystem), nameof(ClutterSystem.GetPatchBiomes)),
             prefix: new HarmonyMethod(AccessTools.Method(typeof(PaintMan),
@@ -207,12 +209,51 @@ public static class PaintMan
 
     private static void Patch_TerrainComp_Load(TerrainComp __instance) => __instance.GetComponent<TerrainColors>()?.Load();
     
+    [Obsolete][HarmonyPostfix]
     private static void Patch_Heightmap_RebuildRenderMesh(Heightmap __instance)
     {
         if (__instance.m_isDistantLod || __instance.m_renderMesh == null) return;
         
         if (!TerrainColors.TryFindTerrainColors(__instance.transform.position, out TerrainColors component)) return;
         component.ApplyToHeightmap(__instance);
+    }
+
+    private static IEnumerable<CodeInstruction> Transpile_Heightmap_RebuildRenderMesh(
+        IEnumerable<CodeInstruction> instructions)
+    {
+        MethodInfo target = AccessTools.Method(typeof(Mesh), nameof(Mesh.GetVertices));
+        MethodInfo insert = AccessTools.Method(typeof(PaintMan), nameof(Apply_TerrainColor_Modifiers));
+        CodeInstruction[] newInstructions =
+        {
+            new(OpCodes.Ldarg_0), 
+            new(OpCodes.Call, insert)
+        };
+            
+        return new CodeMatcher(instructions)
+            .Start()
+            .MatchStartForward(new CodeMatch(OpCodes.Callvirt, target))
+            .Insert(newInstructions)
+            .InstructionEnumeration();
+    }
+    private static void Apply_TerrainColor_Modifiers(Heightmap heightmap)
+    {
+        if (heightmap.m_isDistantLod || heightmap.m_renderMesh == null) return;
+        
+        if (!TerrainColors.TryFindTerrainColors(heightmap.transform.position, out TerrainColors terrainColors)) return;
+        if (!terrainColors.m_initialized) return;
+
+        int num = heightmap.m_width + 1;
+        for (int x = 0; x < num; ++x)
+        {
+            for (int y = 0; y < num; ++y)
+            {
+                int index = x * num + y;
+                bool modified = terrainColors.m_modifiedTerrain[index];
+                if (!modified) continue;
+                Color32 color = terrainColors.m_terrainMask[index];
+                Heightmap.s_tempColors[index] = color;
+            }
+        }
     }
     
     private static Color32 GetBiomeColorFromMesh(this Heightmap hm, int x, int y)
