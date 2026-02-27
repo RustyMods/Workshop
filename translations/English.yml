@@ -1,0 +1,68 @@
+piece_construction_ward: Construction Ward
+piece_construction_ward_desc: Builder's delight
+item_mock_hammer: Plan Hammer
+item_mock_hammer_desc: Build templates
+piece_select_many: Select Many
+piece_select_many_desc: Select connected pieces
+piece_select_area: Select Area
+piece_select_area_desc: Select pieces within radius
+piece_move: Move
+piece_move_desc: Move piece
+piece_select: Select
+piece_select_desc: Select hover piece to place new
+piece_remove_area: Remove Area
+piece_remove_area_desc: Remove objects within area
+piece_remove_many: Remove Many
+piece_remove_many_desc: Remove all connected pieces
+tutorial_construction_ward_topic: Construction Ward
+tutorial_construction_ward_label: Construction Ward
+tutorial_construction_ward_text: Place resources within ward to begin realizing your blueprint
+hover_connected_pieces: Connected Pieces
+piece_category_blueprint: Blueprints
+item_blueprint_build_hammer: Blueprint Hammer
+item_blueprint_build_hammer_desc: Build blueprints
+item_plan_hammer: Plan Hammer
+item_plan_hammer_desc: Build ghost pieces
+item_blueprint: Blueprint
+piece_blueprint_table: Blueprint Table
+piece_blueprint_table_desc: Purchase Blueprints
+blueprint_requirements: Requirements
+ward_connected_stations: Connected Stations
+ward_build: Build
+ward_pieces: Pieces
+ward_refresh: Refresh
+msg_finished_construction: Finished construction
+msg_cancelled_construction: Cancelled construction
+msg_construction_leftover: leftover
+ward_cancel: Cancel
+label_publish: Publish
+hint_publish: Publish blueprints
+label_publishing: Publishing
+msg_publish_canceled: Publish canceled
+label_set_price: Set Price
+msg_sent_blueprint_to_server: Sent blueprint to server!
+tooltip_input_price: Input price, up to 4 items 
+label_revenue: Revenue
+hint_collect_revenue: Collect revenue
+label_collect: Collect
+tooltip_collect: Collect revenue
+label_collecting: Collecting
+label_purchase_ledger: Purchase Ledger
+label_collect_all: Collect All
+label_objects: Objects
+label_creator: Creator
+label_terrains: Terrains
+label_set_terrain: Set Terrain
+hover_poke: Poke
+piece_flag_marker: Terrain Flag
+piece_flag_marker_desc: Place and set terrain modifications
+label_stations: Stations
+label_add: Add
+label_remove: Remove
+tooltip_missing_station: Missing Station
+label_show_connections: Show Connections
+label_hide_connections: Hide Connections
+tooltip_connections: Toggle connection effect visuals
+label_searching: Searching...
+label_requirements: Requirements...
+label_loading: Loading...
