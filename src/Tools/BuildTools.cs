@@ -43,6 +43,8 @@ public static class BuildTools
         _ = new CultivatedGrass("piece_paint_cultivated_grass", "Cultivated Grass");
         _ = new MistlandsGrass("piece_paint_mistlands", "Mistlands Grass");
         _ = new MistlandsDirt("piece_paint_mistlands_dirt", "Mistlands Dirt");
+        _ = new BlackForestGrass("piece_paint_blackforest_grass", "Black Forest Grass");
+        _ = new PlainsGrass("piece_paint_plains_grass", "Plains Grass");
         toolsLoaded = true;
     }
 

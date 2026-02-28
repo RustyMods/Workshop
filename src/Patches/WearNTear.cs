@@ -4,17 +4,6 @@ namespace Workshop;
 
 public static partial class Patches
 {
-    // [HarmonyPatch(typeof(WearNTear), nameof(WearNTear.Awake))]
-    // private static class WearNTear_Awake_Patch
-    // {
-    //     private static bool Prefix(WearNTear __instance)
-    //     {
-    //         if (!__instance.GetComponent<PlanContainer>()) return true;
-    //         __instance.m_piece = __instance.GetComponent<Piece>();
-    //         return false;
-    //     }
-    // }
-    
     [HarmonyPatch(typeof(WearNTear), nameof(WearNTear.HaveSupport))]
     private static class WearNTear_HaveSupport_Patch
     {

@@ -10,6 +10,7 @@ public class Move : ITool
     public Move(string id, string name, int index = 1) : base(id, name, index)
     {
         Tool = this;
+        piece.m_icon = SpriteManager.GetSprite("move_icon.png");
     }
 
     public override void OnUse(Player player)

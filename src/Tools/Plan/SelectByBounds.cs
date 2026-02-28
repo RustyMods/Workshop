@@ -12,6 +12,7 @@ public class SelectByBounds : ISelectMany
     public SelectByBounds(string id, string name, int index = 1) : base(id, name, index)
     {
         SelectByBoundsPieces.Add(piece);
+        piece.m_icon = SpriteManager.GetSprite("select_bounds_icon.png");
     }
 
     protected override bool TryGetSelection(Player player, out List<ZNetView> objects) => TryGetConnectedPieces(player, out objects);

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using HarmonyLib;
 using UnityEngine;
 
@@ -54,8 +55,6 @@ public static partial class Patches
                 return false;
             }
             
-            // if (piece.IsConstructionWard() || piece.IsFlagMarker() || piece.IsBlueprintTable()) return true;
-
             if (ISelectMany.OnPlace(__instance, piece, pos, rot, doAttack))
             {
                 return false;
@@ -200,22 +199,136 @@ public static partial class Patches
     {
         private static void Postfix(Player __instance, ref List<Piece> __result)
         {
-            if (!Terminal.m_cheat)
-            {
-                __result.RemoveAll(piece => ITool.m_toolPieces.TryGetValue(piece, out ITool tool) && tool.adminOnly);
-            }
+            if (Terminal.m_cheat) return;
+            __result.RemoveAll(IsAdminPiece);
         }
     }
+
+    private static bool IsAdminPiece(Piece piece) =>
+        (ITool.m_toolPieces.TryGetValue(piece, out ITool tool) && tool.adminOnly) ||
+        (IPaint.m_paintTools.TryGetValue(piece, out IPaint paint) && paint.adminOnly);
+    
     
     [HarmonyPatch(typeof(Player), nameof(Player.OnSpawned))]
     private static class Player_OnSpawned_Patch
     {
         private static void Postfix()
         {
-            foreach (BlueprintRecipe recipe in BlueprintMan.recipes.Values)
+            List<BlueprintRecipe> recipes = BlueprintMan.recipes.Values.ToList();
+            List<TempBlueprint> temps = BlueprintMan.temps.Values.ToList();
+
+            for (int i = 0; i < recipes.Count; ++i)
             {
+                BlueprintRecipe recipe = recipes[i];
                 recipe.PostProcess();
+            }
+
+            for (int i = 0; i < temps.Count; ++i)
+            {
+                TempBlueprint temp = temps[i];
+                temp.PostProcess();
             }
         }
     }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.RemovePiece))]
+    private static class Player_RemovePiece_Patch
+    {
+        private static void Postfix(Player __instance, ref bool __result)
+        {
+            if (!__instance.GetRightItem().IsGhostHammer()) return;
+
+            if (Select.hovering == null || !Select.hovering.GetComponent<GhostPiece>()) return;
+            if (!Select.hovering.TryGetComponent(out ZNetView view)) return;
+            view.ClaimOwnership();
+            view.Destroy();
+            __result = true;
+        }
+    }
+
+    // [HarmonyPatch(typeof(Character), nameof(Character.UpdateLava))]
+    // private static class Character_UpdateLava_Patch
+    // {
+    //     private static bool Prefix(Character __instance, float dt)
+    //     {
+    //         if (WorldGenerator.IsAshlands(__instance.transform.position.x, __instance.transform.position.z))
+    //             return true;
+    //         
+    //         __instance.m_lavaTimer += dt;
+    //         __instance.m_aboveOrInLavaTimer += dt;
+    //         
+    //         Vector3 position = __instance.transform.position;
+    //         ZoneSystem.instance.GetGroundData(ref position, out Vector3 _, out var biome, out Heightmap.BiomeArea _, out var hmap);
+    //         if (hmap == null) return false;
+    //         
+    //         biome = hmap.GetBiomeFromMesh(position);
+    //         if (biome != Heightmap.Biome.AshLands) return false;
+    //         
+    //         float lava = hmap.GetVegetationMask(position);
+    //         __instance.m_lavaProximity = Mathf.Min(1f, Utils.SmoothStep(0.1f, 1f, lava));
+    //         
+    //         __instance.m_lavaProximity = 0.0f;
+    //
+    //         if (__instance.m_lavaProximity > __instance.m_minLavaMaskThreshold)
+    //         {
+    //             __instance.m_aboveOrInLavaTimer = 0.0f;
+    //         }
+    //         
+    //         __instance.m_lavaHeightFactor = __instance.transform.position.y - position.y;
+    //         __instance.m_lavaHeightFactor = (__instance.m_lavaAirDamageHeight - __instance.m_lavaHeightFactor) / __instance.m_lavaAirDamageHeight;
+    //         
+    //         bool flag = false;
+    //         
+    //         if (__instance.m_lavaProximity > __instance.m_minLavaMaskThreshold &&
+    //             Physics.Raycast(__instance.transform.position + Vector3.up, Vector3.down, out var hitInfo, 50f, Character.s_blockedRayMask) &&
+    //             hitInfo.collider.GetComponent<Heightmap>() == null)
+    //         {
+    //             flag = true;
+    //         }
+    //
+    //         if (!flag && __instance.IsRiding())
+    //         {
+    //             flag = true;
+    //         }
+    //         float num = 1f - __instance.GetEquipmentHeatResistanceModifier();
+    //         
+    //         if (Terminal.m_showTests && __instance.IsPlayer())
+    //         {
+    //             Terminal.m_testList["Lava/Height/Resist"] = $"{__instance.m_lavaProximity:0.00} / {__instance.m_lavaHeightFactor:0.00} / {num:0.00}";
+    //         }
+    //         
+    //         if (__instance.m_lavaProximity >  __instance.m_minLavaMaskThreshold &&  __instance.m_lavaHeightFactor > 0.0 && !flag)
+    //         {
+    //           __instance.m_lavaHeatLevel += __instance.m_lavaProximity * dt * __instance.m_heatBuildupBase * __instance.m_lavaHeightFactor * num;
+    //           __instance.m_lavaTimer = 0.0f;
+    //         }
+    //         else if (__instance.m_dayHeatGainRunning != 0.0 &&
+    //                  __instance.IsPlayer() && EnvMan.IsDay() &&
+    //                  !__instance.IsUnderRoof() &&
+    //                  __instance.GetEquipmentHeatResistanceModifier() < __instance.m_dayHeatEquipmentStop)
+    //         {
+    //             if (__instance.m_currentVel.magnitude > 0.10000000149011612 && __instance.IsOnGround())
+    //             {
+    //                 __instance.m_lavaHeatLevel += dt * __instance.m_dayHeatGainRunning * num;
+    //             }
+    //             else if (!__instance.InWater())
+    //             {
+    //                 __instance.m_lavaHeatLevel += dt * __instance.m_dayHeatGainStill;
+    //             }
+    //
+    //             if (__instance.m_lavaHeatLevel > __instance.m_heatLevelFirstDamageThreshold)
+    //             {
+    //                 __instance.m_lavaHeatLevel = __instance.m_heatLevelFirstDamageThreshold;
+    //             }
+    //         }
+    //         else if (!__instance.InWater())
+    //         {
+    //             __instance.m_lavaHeatLevel -= dt * __instance.m_heatCooldownBase;
+    //         }
+    //
+    //         __instance.m_lavaHeatLevel = __instance.m_tolerateFire ? 0.0f : Mathf.Clamp(__instance.m_lavaHeatLevel, 0.0f, 1f);
+    //
+    //         return false;
+    //     }
+    // }
 }

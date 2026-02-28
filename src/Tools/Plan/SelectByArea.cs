@@ -37,6 +37,7 @@ public class SelectByArea : ISelectMany
         projector = piece.gameObject.AddComponent<AreaProjector>();
         piece.m_canRotate = false;
         AreaPieces.Add(piece);
+        piece.m_icon = SpriteManager.GetSprite("select_area_icon.png");
         Tools.Add(this);
     }
 

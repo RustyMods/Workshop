@@ -11,6 +11,7 @@ public static class ZDOHelper
     {
         if (string.IsNullOrEmpty(zdo)) return;
         int hash = ZDO.m_prefab;
+        bool persistent = ZDO.Persistent;
         try
         {
             ZPackage pkg = new ZPackage(zdo);
@@ -24,7 +25,7 @@ public static class ZDOHelper
         finally
         {
             ZDO.SetPrefab(hash);
-            ZDO.Persistent = true;
+            ZDO.Persistent = persistent;
             ZDO.SetPosition(pos);
             ZDO.SetRotation(rot);
         }

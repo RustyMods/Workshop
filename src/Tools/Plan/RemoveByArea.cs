@@ -9,6 +9,7 @@ public class RemoveByArea : SelectByArea
         RemoveTools.Add(piece);
         projector.targetPiecesOnly = false;
         adminOnly = true;
+        piece.m_icon = SpriteManager.GetSprite("remove_area_icon.png");
     }
 
     public override void OnUse(Player player)

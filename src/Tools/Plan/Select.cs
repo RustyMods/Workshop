@@ -17,6 +17,7 @@ public class Select : ITool
     {
         ISelectMany.SelectTools.Add(piece);
         Tools.Add(piece);
+        piece.m_icon = SpriteManager.GetSprite("select_icon.png");
     }
 
     public static void UpdateHover(Player player)

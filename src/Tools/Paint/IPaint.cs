@@ -9,7 +9,7 @@ public static class PaintVars
 }
 public abstract class IPaint
 {
-    private static readonly Dictionary<Piece, IPaint> m_paintTools = new();
+    public static readonly Dictionary<Piece, IPaint> m_paintTools = new();
     private static readonly Dictionary<TerrainModifier.PaintType, IPaint> m_paintMask = new();
    
     public static bool IsPaintTool(Piece piece) => m_paintTools.ContainsKey(piece);

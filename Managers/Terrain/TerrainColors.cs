@@ -119,8 +119,8 @@ public class TerrainColors : MonoBehaviour
 
     public Heightmap.Biome GetBiome(Heightmap hm, Vector3 point)
     {
-        hm.WorldToVertexMask(point, out int x, out int y);
-        int index = x * (hm.m_width + 1) + y;
+        hm.WorldToVertex(point, out int x, out int y);
+        int index = y * (hm.m_width + 1) + x;
         bool modified = m_modifiedTerrain[index];
         if (!modified) return hm.GetBiome(point);
         Color32 color = m_terrainMask[index];

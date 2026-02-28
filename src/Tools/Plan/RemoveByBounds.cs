@@ -8,6 +8,7 @@ public class RemoveByBounds : SelectByBounds
     {
         RemoveTools.Add(piece);
         adminOnly = true;
+        piece.m_icon = SpriteManager.GetSprite("remove_bounds_icon.png");
     }
 
     public override void OnUse(Player player)

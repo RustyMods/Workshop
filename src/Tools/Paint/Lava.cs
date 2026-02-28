@@ -13,6 +13,7 @@ public class Lava : IPaint
         terrainOp.m_settings.m_raiseRadius = 2f;
         terrainOp.m_settings.m_raiseDelta = 1;
         terrainOp.m_settings.m_raisePower = 0.1f;
+        piece.m_icon = SpriteManager.GetSprite("lava_icon.png");
     }
     
     public override Color GetColor() => new Color(0f, 0f, 0f, 1f);

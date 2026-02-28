@@ -117,7 +117,8 @@ public static class PaintMan
         __result = __result.AddRangeToArray(paintTypes.Keys.ToArray());
     }
 
-    private static bool Patch_TerrainComp_PaintCleared(TerrainComp __instance,
+    private static bool Patch_TerrainComp_PaintCleared(
+        TerrainComp __instance,
         Vector3 worldPos,
         float radius,
         TerrainModifier.PaintType paintType,
@@ -154,7 +155,17 @@ public static class PaintMan
         return false;
     }
     
-    private static void UpdatePaints(TerrainComp comp, TerrainColors terrainColors, IPaint paint, Vector2 centerVertex, int centerVertex_x, int vertexSearchRadius, int vertex_y, bool heightCheck, float heightOffset, float radiusInVertices)
+    private static void UpdatePaints(
+        TerrainComp comp, 
+        TerrainColors terrainColors, 
+        IPaint paint, 
+        Vector2 centerVertex, 
+        int centerVertex_x, 
+        int vertexSearchRadius, 
+        int vertex_y, 
+        bool heightCheck, 
+        float heightOffset, 
+        float radiusInVertices)
     {
         for (int i = centerVertex_x - vertexSearchRadius; 
              i <= centerVertex_x + vertexSearchRadius; 
@@ -173,7 +184,16 @@ public static class PaintMan
         }
     }
 
-    private static void UpdatePaint(TerrainComp comp, TerrainColors terrainColors, IPaint paint, Vector3 centerVertex, int vertex_x, int vertex_y, bool heightCheck, float heightOffset, float radiusInVertices)
+    private static void UpdatePaint(
+        TerrainComp comp, 
+        TerrainColors terrainColors, 
+        IPaint paint, 
+        Vector3 centerVertex, 
+        int vertex_x, 
+        int vertex_y, 
+        bool heightCheck, 
+        float heightOffset, 
+        float radiusInVertices)
     {
         float distanceFromCenter = Vector2.Distance(centerVertex, new Vector2(vertex_x, vertex_y));
         int gridStride = comp.m_width + 1;
@@ -237,7 +257,7 @@ public static class PaintMan
     }
     private static void Apply_TerrainColor_Modifiers(Heightmap heightmap)
     {
-        if (heightmap.m_isDistantLod || heightmap.m_renderMesh == null) return;
+        if (heightmap.m_isDistantLod) return;
         
         if (!TerrainColors.TryFindTerrainColors(heightmap.transform.position, out TerrainColors terrainColors)) return;
         if (!terrainColors.m_initialized) return;
@@ -267,7 +287,11 @@ public static class PaintMan
         return colors[index];
     }
 
-    private static Heightmap.Biome GetBiomeFromMesh(this Heightmap hm, Vector3 point, float oceanLevel = 0.02f, bool waterAlwaysOcean = false)
+    public static Heightmap.Biome GetBiomeFromMesh(
+        this Heightmap hm, 
+        Vector3 point, 
+        float oceanLevel = 0.02f, 
+        bool waterAlwaysOcean = false)
     {
         if (hm.m_isDistantLod | waterAlwaysOcean)
         {
@@ -338,8 +362,9 @@ public static class PaintMan
 
     private static bool Patch_ClutterSystem_GetPatchBiomes(Vector3 center, float halfSize, ref Heightmap.Biome __result)
     {
+        if (!ConfigManager.ControlClutter) return true;
         __result = GetPatchBiomesByMesh(center, halfSize);
-        return false;
+        return __result == Heightmap.Biome.None;
     }
 
     private static bool Patch_ClutterSystem_GetGroundInfo(
@@ -351,7 +376,15 @@ public static class PaintMan
         out Heightmap.Biome biome, 
         ref bool __result)
     {
+        if (!ConfigManager.ControlClutter)
+        {
+            point = p;
+            normal = Vector3.up;
+            hmap = null;
+            biome = Heightmap.Biome.None;
+            return true;
+        }
         __result = __instance.GetGroundInfoByMesh(p, out point, out normal, out hmap, out biome);
-        return false;
+        return biome == Heightmap.Biome.None;
     }
 }

@@ -138,7 +138,7 @@ public static class BlueprintMan
                 recipe.name = kvp.Key;
 
                 if (!temps.TryGetValue(kvp.Key, out TempBlueprint existing) || 
-                    existing.TransferTo(recipe))
+                    !existing.TransferTo(recipe))
                 {
                     GameObject container = recipe.Load();
                     if (container == null) continue;

@@ -1,8 +1,8 @@
 {
-  "name": "",
+  "name": "Workshop",
   "version_number": "0.0.1",
-  "website_url": "",
-  "description": "",
+  "website_url": "https://github.com/RustyMods/Workshop/tree/master",
+  "description": "Dream, Plan, Build",
   "dependencies": [
     "denikson-BepInExPack_Valheim-5.4.2333"
   ]
