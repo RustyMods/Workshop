@@ -153,6 +153,10 @@ public abstract class Tab
         }
     }
 
+    public virtual void OnInventoryGuiHide()
+    {
+    }
+
     public static void SetBaseTabs(InventoryGui gui, Player player, bool craft = true, bool upgrade = true)
     {
         gui.m_tabCraft.gameObject.SetActive(craft);

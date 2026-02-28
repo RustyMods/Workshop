@@ -20,7 +20,8 @@ public class PiecesTab : Tab
     private float loadingTimer;
     private CancellationTokenSource cancelToken;
     
-    public PiecesTab(InventoryGui gui, int index = 0) : base(gui, "ConstructionWardRefresh", "$ward_pieces", index)
+    public PiecesTab(InventoryGui gui, int index = 0) : 
+        base(gui, "ConstructionWardRefresh", "$ward_pieces", index)
     {
         SetGamepadHint("$ward_refresh");
         craftLabel = "$ward_build";
@@ -31,7 +32,7 @@ public class PiecesTab : Tab
 
     public override void OnCraft(InventoryGui gui)
     {
-        if (currentWard == null || !Player.m_localPlayer || currentWard.isBuilding)
+        if (currentWard == null || !Player.m_localPlayer || currentWard.IsBuilding())
         {
             Workshop.LogDebug("Cannot interact, ward is null or building");
             return;
@@ -54,6 +55,12 @@ public class PiecesTab : Tab
     {
         selectedPiece = null;
         base.Reset();
+        
+        if (cancelToken == null) return;
+        
+        cancelToken.Cancel();
+        cancelToken.Dispose();
+        cancelToken = null;
     }
 
     public override void OnCancel(InventoryGui gui)
@@ -87,7 +94,7 @@ public class PiecesTab : Tab
         gui.m_recipeName.text = Localization.instance.Localize(ConstructionWard.SHARED_NAME);
         ClearList(gui);
         ResizeList(gui);
-        if (!isLoading && !currentWard.isBuilding)
+        if (!isLoading && !currentWard.IsBuilding())
         {
             cancelToken = new CancellationTokenSource();
             _ = LoadDescription(gui, player, currentWard, cancelToken.Token);
@@ -99,7 +106,7 @@ public class PiecesTab : Tab
     {
         if (currentWard == null) return false;
 
-        if (currentWard.isBuilding)
+        if (currentWard.IsBuilding())
         {
             SetProgressLabel(craftingLabel);
             gui.m_craftProgressPanel.gameObject.SetActive(true);
@@ -130,7 +137,7 @@ public class PiecesTab : Tab
         {
             gui.m_craftProgressPanel.gameObject.SetActive(false);
             gui.m_craftButton.gameObject.SetActive(true);
-            gui.m_craftButton.interactable = !currentWard.isBuilding;
+            gui.m_craftButton.interactable = !currentWard.IsBuilding();
         }
         
         return true;
@@ -188,7 +195,7 @@ public class PiecesTab : Tab
                 ++loadingTimer;
                 ConstructionWard.PieceData data = pieces[i];
                 pieceCount += data.ghosts.Count;
-                AddPiece(gui, data, i);
+                AddPiece(gui, ward, data, i);
                 gui.m_recipeName.text = $"{pieceLocalized} ({pieceCount})";
                 await Task.Delay(delay, token);
             }
@@ -217,15 +224,18 @@ public class PiecesTab : Tab
                 }
                 else
                 {
+                    int lineCount = 0;
                     StringBuilder sb = new StringBuilder(256);
                     List<CraftingStation> stations = ward.GetMissingCraftingStations();
                     if (stations.Count > 0)
                     {
                         sb.AppendLine("$tooltip_missing_station:");
+                        ++lineCount;
                         for (int i = 0; i < stations.Count; ++i)
                         {
                             CraftingStation station = stations[i];
                             sb.AppendLine($"- <color=red>{station.m_name}</color>");
+                            ++lineCount;
                         }
                     }
 
@@ -241,6 +251,18 @@ public class PiecesTab : Tab
                         for (int i = 0; i < requirements.Count; ++i)
                         {
                             await Task.Delay(delay, token);
+
+                            if (lineCount > 13)
+                            {
+                                float remaining = loadingLength - loadingTimer;
+                                sb.AppendLine($"... {remaining} more. ");
+                                
+                                loadingTimer = loadingLength;
+                                isLoadingRequirements = false;
+
+                                break;
+                            }
+                            
                             ++loadingTimer;
                             Piece.Requirement requirement = requirements[i];
                             int currentAmount = ward.m_container.GetInventory()
@@ -252,6 +274,7 @@ public class PiecesTab : Tab
                                 requirement.m_amount,
                                 currentAmount
                             );
+                            ++lineCount;
                         }
                     }
 
@@ -273,7 +296,7 @@ public class PiecesTab : Tab
         }
     }
     
-    private void AddPiece(InventoryGui gui, ConstructionWard.PieceData data, int idx)
+    private void AddPiece(InventoryGui gui, ConstructionWard ward, ConstructionWard.PieceData data, int idx)
     {
         GameObject element = CreateListElement(gui, idx, 
             out Image icon, 
@@ -281,14 +304,16 @@ public class PiecesTab : Tab
             out GuiBar durability, 
             out TMP_Text quality,
             out Button elementButton);
+
+        bool hasRequirements = data.HasRequirements(ward);
         
         data.icon = icon;
         data.name = name;
         icon.sprite = data.piece.m_icon;
         name.text = Localization.instance.Localize(data.piece.m_name);
-        name.color = Color.white;
+        name.color = hasRequirements ? Color.white : new Color(0.66f, 0.66f, 0.66f, 1f);
         bool disabled = data.IsDisabled(currentWard);
-        icon.color = disabled ? Color.black : Color.white;
+        icon.color = disabled ? Color.black : hasRequirements ? Color.white : new Color(0.66f, 0.66f, 0.66f, 1f);
         name.fontStyle = disabled ? FontStyles.Strikethrough : FontStyles.Normal;
         durability.gameObject.SetActive(false);
         if (data.count > 0)
@@ -300,19 +325,17 @@ public class PiecesTab : Tab
         {
             quality.gameObject.SetActive(false);
         }
-            
-        InventoryGui.RecipeDataPair pair = new InventoryGui.RecipeDataPair
-        {
-            InterfaceElement = element
-        };
-        
         elementButton.onClick.AddListener(() =>
         {
-            if (currentWard.isBuilding) return;
+            if (currentWard.IsBuilding()) return;
             selectedPiece = data;
             SetElement(gui, idx, true);
             UpdateSelectedPiece(gui, currentWard, data);
         });
+        InventoryGui.RecipeDataPair pair = new InventoryGui.RecipeDataPair
+        {
+            InterfaceElement = element
+        };
         gui.m_availableRecipes.Add(pair);
     }
 
@@ -403,14 +426,14 @@ public class PiecesTab : Tab
     }
 
     [Obsolete]
-    private void SetupPieceList(InventoryGui gui)
+    private void SetupPieceList(InventoryGui gui, ConstructionWard ward)
     {
         ClearList(gui);
         List<ConstructionWard.PieceData> pieces = currentWard.GetPieces();
         for (int i = 0; i < pieces.Count; ++i)
         {
             ConstructionWard.PieceData data = pieces[i];
-            AddPiece(gui, data, i);
+            AddPiece(gui, ward, data, i);
         }
         ResizeList(gui);
     }

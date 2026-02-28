@@ -28,7 +28,7 @@ public static partial class Patches
                 character is Player player &&
                 (ZInput.GetKey(KeyCode.LeftAlt) || ZInput.GetButton(ConstructionWard.BUILD_KEY)))
             {
-                if (ward.isBuilding) ward.Cancel();
+                if (ward.IsBuilding()) ward.Cancel();
                 else ward.Build(player);
                 return false;
             }

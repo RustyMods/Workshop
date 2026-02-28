@@ -116,6 +116,7 @@ public static class ConfigManager
             "Build Range", 
             20f, 
             "Set construction ward build range");
+        _buildRange.SettingChanged += (_, _) => ConstructionWard.OnGhostPiecesChanged();
         
         _ghostTransparency = config("2 - Settings", 
             "Piece Opacity",

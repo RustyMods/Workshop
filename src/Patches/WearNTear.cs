@@ -9,7 +9,7 @@ public static partial class Patches
     {
         private static void Postfix(WearNTear __instance, ref bool __result)
         {
-            __result |= __instance.GetComponent<GhostPiece>() || ConstructionWard.IsBuilding();
+            __result |= __instance.GetComponent<GhostPiece>() || ConstructionWard.AreBuilding();
         }
     }
 

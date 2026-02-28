@@ -11,6 +11,10 @@ using UnityEngine.UI;
 
 namespace Workshop;
 
+public static class WardVars
+{
+    public static readonly int isBuilding = "Workshop.ConstructionWard.IsBuilding".GetStableHashCode();
+}
 public class ConstructionWard : MonoBehaviour
 {
     private static Piece PIECE;
@@ -18,6 +22,7 @@ public class ConstructionWard : MonoBehaviour
     private static readonly List<ConstructionWard> instances = new();
     private static readonly int _EmissionColor = Shader.PropertyToID("_EmissionColor");
     public const string BUILD_KEY = "JoyLTrigger";
+    private static float lastGhostPieceChangeTime;
 
     public Piece m_piece;
     public ZNetView m_nview;
@@ -27,6 +32,7 @@ public class ConstructionWard : MonoBehaviour
     public List<GhostPiece> m_ghostPieces = new();
     private readonly List<PieceData> m_disabledPieceData = new();
     private readonly Dictionary<string, PieceData> m_pieces = new();
+    private readonly List<Piece.Requirement> m_totalRequirements = new();
     public bool reloadGhosts = true;
     public bool isSearching;
     public float ghostsCount;
@@ -52,7 +58,7 @@ public class ConstructionWard : MonoBehaviour
     public EffectList m_removedPermittedEffect;
 
     public List<CraftingStation> stationsInRange = new();
-    public bool isBuilding;
+    private bool isBuilding;
     private CancellationTokenSource cancelToken;
     public float m_constructionTimer;
     public float m_constructionLength;
@@ -69,12 +75,12 @@ public class ConstructionWard : MonoBehaviour
         
         if (m_nview.IsValid())
         {
-            // InvokeRepeating(nameof(UpdateGhostPieces), 0f, 10f);
             InvokeRepeating(nameof(UpdateConnection), 1f, 4f);
             InvokeRepeating(nameof(UpdateAreaMarker), 0f, 2f);
         }
 
         connectionEnabled = ConfigManager.ConnectionEnabled;
+        Invoke(nameof(UpdateGhostPieces), 5f);
     }
 
     public List<CraftingStation> GetConnectedStations() => stationsInRange;
@@ -193,6 +199,7 @@ public class ConstructionWard : MonoBehaviour
         ghostProcessed = 0.0f;
         m_ghostPieces.Clear();
         m_pieces.Clear();
+        m_totalRequirements.Clear();
         for (int i = 0; i < ghosts.Count; ++i)
         {
             await Task.Delay(delay);
@@ -222,6 +229,41 @@ public class ConstructionWard : MonoBehaviour
             }
         }
 
+        foreach (KeyValuePair<string, PieceData> kvp in m_pieces)
+        {
+            kvp.Value.GetRequirements();
+        }
+        
+        Dictionary<string, Piece.Requirement> requirements = new();
+
+        List<PieceData> pieces = m_pieces.Values.ToList();
+        for (int i = 0; i < pieces.Count; ++i)
+        {
+            PieceData data = pieces[i];
+            if (data.IsDisabled(this)) continue;
+            List<Piece.Requirement> reqs = data.GetRequirements();
+            for (int j = 0; j < reqs.Count; ++j)
+            {
+                Piece.Requirement requirement = reqs[j];
+                string item = requirement.m_resItem.m_itemData.m_shared.m_name;
+                if (requirements.TryGetValue(item, out Piece.Requirement req))
+                {
+                    req.m_amount += requirement.m_amount;
+                }
+                else
+                {
+                    Piece.Requirement res = new Piece.Requirement
+                    {
+                        m_resItem = requirement.m_resItem,
+                        m_amount = requirement.m_amount
+                    };
+                    requirements.Add(item, res);
+                }
+            }
+        }
+        
+        m_totalRequirements.AddRange(requirements.Values);
+
         isSearching = false;
         ghostsCount = 1;
         ghostProcessed = 0.0f;
@@ -234,83 +276,7 @@ public class ConstructionWard : MonoBehaviour
 
     public List<Piece.Requirement> GetTotalBuildRequirements()
     {
-        Dictionary<string, Piece.Requirement> requirements = new();
-        List<GhostPiece> disabledPieces = m_disabledPieceData.SelectMany(p => p.ghosts).ToList();
-        for (int i = 0; i < m_ghostPieces.Count; ++i)
-        {
-            GhostPiece ghost = m_ghostPieces[i];
-            if (disabledPieces.Contains(ghost)) continue;
-            if (ghost.m_piece != null)
-            {
-                ProcessPieceRequirements(ghost.m_piece, ghost.inventory, ghost.itemStand, ref requirements);
-            }
-        }
-        return requirements.Values.ToList();
-    }
-
-    private static void ProcessPieceRequirements(Piece piece, Inventory inventory, ItemStandItemData itemStandData, ref Dictionary<string, Piece.Requirement> requirements)
-    {
-        for (int index = 0; index < piece.m_resources.Length; ++index)
-        {
-            Piece.Requirement res = piece.m_resources[index];
-            string item = res.m_resItem.m_itemData.m_shared.m_name;
-            if (requirements.TryGetValue(item, out Piece.Requirement req))
-            {
-                req.m_amount += res.m_amount;
-            }
-            else
-            {
-                requirements[item] = new Piece.Requirement
-                {
-                    m_resItem = res.m_resItem,
-                    m_amount = res.m_amount,
-                    m_recover = res.m_recover,
-                    m_amountPerLevel = res.m_amountPerLevel,
-                    m_extraAmountOnlyOneIngredient = res.m_extraAmountOnlyOneIngredient,
-                };
-            }
-        }
-
-        if (inventory.NrOfItems() > 0)
-        {
-            foreach (ItemDrop.ItemData item in inventory.GetAllItems())
-            {
-                if (requirements.TryGetValue(item.m_shared.m_name, out Piece.Requirement req))
-                {
-                    req.m_amount += 1;
-                }
-                else
-                {
-                    if (PrefabManager.TryGetItemDrop(item.m_shared.m_name, out ItemDrop itemDrop))
-                    {
-                        requirements[item.m_shared.m_name] = new Piece.Requirement
-                        {
-                            m_resItem = itemDrop,
-                            m_amount = item.m_stack
-                        };
-                    }
-                }
-            }
-        }
-
-        if (itemStandData != null && 
-            itemStandData.TryGetPieceRequirement(out Piece.Requirement itemStandRequirement))
-        {
-            ItemDrop item = itemStandRequirement.m_resItem;
-            if (requirements.TryGetValue(item.m_itemData.m_shared.m_name, out Piece.Requirement res))
-            {
-                res.m_amount += 1;
-            }
-            else
-            {
-                requirements[item.m_itemData.m_shared.m_name] = new Piece.Requirement
-                {
-                    m_resItem = item,
-                    m_amount = 1,
-                };
-            }
-            requirements[itemStandRequirement.m_resItem.m_itemData.m_shared.m_name] = itemStandRequirement;
-        }
+        return m_totalRequirements;
     }
 
     public HashSet<CraftingStation> GetRequiredCraftingStations()
@@ -342,9 +308,15 @@ public class ConstructionWard : MonoBehaviour
         return missing;
     }
 
+    public void SetIsBuilding(bool value)
+    {
+        m_nview.GetZDO().Set(WardVars.isBuilding, value);
+    }
+
+    public bool IsBuilding() => m_nview.IsValid() ? m_nview.GetZDO().GetBool(WardVars.isBuilding) : isBuilding;
     public void Build(Player player)
     {
-        if (isBuilding)
+        if (AreBuilding())
         {
             Workshop.LogDebug("Cannot build, already processing");
             return;
@@ -363,6 +335,7 @@ public class ConstructionWard : MonoBehaviour
         cancelToken = new CancellationTokenSource();
         m_constructionLength = order.Count * ConfigManager.BuildInterval;
         m_constructionTimer = 0f;
+        SetIsBuilding(true);
         _ = Process(player, order, cancelToken.Token);
     }
 
@@ -373,6 +346,7 @@ public class ConstructionWard : MonoBehaviour
         cancelToken.Cancel();
         cancelToken.Dispose();
         cancelToken = null;
+        SetIsBuilding(false);
     }
 
     private async Task Process(Player player, List<GhostPiece> pieces, CancellationToken cancellationToken = default)
@@ -411,6 +385,7 @@ public class ConstructionWard : MonoBehaviour
             isBuilding = false;
             cancelToken.Dispose();
             cancelToken = null;
+            SetIsBuilding(false);
             if (Tab.currentWard) InventoryGui.instance.UpdateCraftingPanel();
         }
     }
@@ -572,6 +547,7 @@ public class ConstructionWard : MonoBehaviour
         public int count;
         public Image icon;
         public TMP_Text name;
+        public List<Piece.Requirement> requirements = new List<Piece.Requirement>();
 
         public bool IsDisabled(ConstructionWard ward) => ward.m_disabledPieceData.Contains(this);
         
@@ -596,9 +572,23 @@ public class ConstructionWard : MonoBehaviour
             gui.m_moveItemEffects.Create(gui.transform.position, Quaternion.identity);
         }
 
+        public bool HasRequirements(ConstructionWard ward)
+        {
+            for (int i = 0; i < requirements.Count; ++i)
+            {
+                Piece.Requirement requirement = requirements[i];
+                string item = requirement.m_resItem.m_itemData.m_shared.m_name;
+                int amount = requirement.m_amount;
+                int inventoryCount = ward.m_container.GetInventory().CountItems(item);
+                if (amount > inventoryCount) return false;
+            }
+
+            return true;
+        }
+
         public List<Piece.Requirement> GetRequirements()
         {
-            List<Piece.Requirement> requirements = new();
+            requirements.Clear();
             for (int i = 0; i < piece.m_resources.Length; ++i)
             {
                 Piece.Requirement req = piece.m_resources[i];
@@ -623,7 +613,7 @@ public class ConstructionWard : MonoBehaviour
             return requirements;
         }
 
-        public static void AppendInventoryItems(ref List<Piece.Requirement> requirements, Inventory inventory)
+        private static void AppendInventoryItems(ref List<Piece.Requirement> requirements, Inventory inventory)
         {
             List<ItemDrop.ItemData> items = inventory.GetAllItems();
             for (int i = 0; i < items.Count; ++i)
@@ -639,7 +629,7 @@ public class ConstructionWard : MonoBehaviour
         }
     }
 
-    public class StationData
+    private class StationData
     {
         public readonly CraftingStation station;
         public readonly GameObject effectPrefab;
@@ -678,7 +668,6 @@ public class ConstructionWard : MonoBehaviour
         return wards;
     }
 
-    private static float lastGhostPieceChangeTime;
 
     public static void OnGhostPiecesChanged()
     {
@@ -691,7 +680,7 @@ public class ConstructionWard : MonoBehaviour
         }
     }
 
-    public static bool IsBuilding() => instances.Any(x => x.isBuilding);
+    public static bool AreBuilding() => instances.Any(x => x.IsBuilding());
 
     public static void OnRecipeChange(object sender, EventArgs e)
     {
