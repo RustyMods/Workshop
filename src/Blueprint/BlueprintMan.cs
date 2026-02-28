@@ -80,6 +80,7 @@ public static class BlueprintMan
     private static readonly string IconPath;
     private static readonly CustomSyncedValue<string> sync;
     public static readonly Dictionary<string, byte[]> icons;
+    // same blueprint can exist in temps and recipes, if so, do not load twice, simply transfer temp container to recipe container
     public static readonly Dictionary<string, TempBlueprint> temps;
     public static readonly Dictionary<string, BlueprintRecipe> recipes;
     public static readonly Dictionary<string, string> blueprintFilePaths;
@@ -237,9 +238,7 @@ public static class BlueprintMan
             string path = localPaths[i];
             string extension = Path.GetExtension(path);
             string filename = Path.GetFileName(path);
-
-            if (publishBlueprints.ContainsKey(filename)) continue;
-
+            
             FileType type = extension switch
             {
                 ".blueprint" => FileType.Blueprint,
@@ -279,23 +278,42 @@ public static class BlueprintMan
             sync.ValueChanged += OnSyncChanged;
         }
     }
+
+    public static void Dispose()
+    {
+        foreach (KeyValuePair<string, TempBlueprint> kvp in temps)
+        {
+            kvp.Value.Dispose();
+        }
+
+        foreach (KeyValuePair<string, BlueprintRecipe> kvp in recipes)
+        {
+            kvp.Value.Dispose();
+        }
+        
+        temps.Clear();
+        recipes.Clear();
+    }
     
     public static void Load(PieceTable table, bool postProcess = false)
     {
-        foreach (KeyValuePair<string, BlueprintRecipe> kvp in recipes)
-        {
-            GameObject container = kvp.Value.Load();
-            if (container == null) continue;
-            if (postProcess) kvp.Value.PostProcess();
-            table.m_pieces.Add(container);
-        }
-
         foreach (KeyValuePair<string, TempBlueprint> kvp in temps)
         {
             GameObject container = kvp.Value.Load();
             if (container == null) continue;
             if (postProcess) kvp.Value.PostProcess();
             table.m_pieces.Add(container);
+        }
+        
+        foreach (KeyValuePair<string, BlueprintRecipe> kvp in recipes)
+        {
+            if (!temps.TryGetValue(kvp.Key, out TempBlueprint temp) || !temp.TransferTo(kvp.Value))
+            {
+                GameObject container = kvp.Value.Load();
+                if (container == null) continue;
+                if (postProcess) kvp.Value.PostProcess();
+                table.m_pieces.Add(container);
+            }
         }
     }
     public static bool IsBlueprint(this Piece piece) => piece.GetComponent<PlanContainer>();

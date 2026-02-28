@@ -13,7 +13,6 @@ public static class Marketplace
 {
     public static readonly CustomSyncedValue<string> sync = new(ConfigManager.ConfigSync, "Workshop.Blueprint.SoldBlueprint");
     public static Dictionary<string, int> PurchaseLedger = new();
-
     public static void OnBlueprintSoldChanged()
     {
         if (string.IsNullOrEmpty(sync.Value))
@@ -50,7 +49,7 @@ public static class Marketplace
     {
         if (!ZNet.instance || !ZNet.instance.IsServer()) return;
         string worldName = ZNet.instance.GetWorldName();
-        string filename = $"{Workshop.ModName}.{worldName}.dat";
+        string filename = $"{Workshop.ModName}.{worldName}.Marketplace.dat";
         string filepath = Path.Combine(ConfigManager.ConfigFolderPath, filename);
         string text = ConfigManager.Serialize(PurchaseLedger);
         byte[] compressed = CompressAndEncode(text);
@@ -75,7 +74,8 @@ public static class Marketplace
             Workshop.LogWarning(ex.Message);
         }
     }
-
+    
+    public static void OnLogout() => PurchaseLedger = new Dictionary<string, int>();
     private static byte[] CompressAndEncode(string text)
     {
         byte[] data = Encoding.UTF8.GetBytes(text);
@@ -138,25 +138,25 @@ public static class Marketplace
         }
         else
         {
-            ZRoutedRpc.instance.InvokeRoutedRPC(nameof(RPC_ReceiveBlueprintPurchaseNotice), recipe.name);
+            ZRoutedRpc.instance.InvokeRoutedRPC(nameof(RPC_ReceiveBlueprintPurchaseNotice), recipe.settings.filename);
         }
     }
 
-    public static void RPC_ReceiveBlueprintPurchaseNotice(long sender, string recipeName)
+    public static void RPC_ReceiveBlueprintPurchaseNotice(long sender, string filename)
     {
-        if (!BlueprintMan.recipes.ContainsKey(recipeName))
+        if (!BlueprintMan.recipes.ContainsKey(filename))
         {
             Workshop.LogWarning("Received notice of a purchased blueprint, but not recipe not found !");
             return;
         }
 
-        if (PurchaseLedger.ContainsKey(recipeName))
+        if (PurchaseLedger.ContainsKey(filename))
         {
-            ++PurchaseLedger[recipeName];
+            ++PurchaseLedger[filename];
         }
         else
         {
-            PurchaseLedger[recipeName] = 1;
+            PurchaseLedger[filename] = 1;
         }
         
         SyncLedger();
@@ -168,7 +168,7 @@ public static class Marketplace
         
         if (ZNet.instance.IsServer())
         {
-            RPC_SendCollectedNotice(0L, recipe.name, amount);
+            RPC_SendCollectedNotice(0L, recipe.settings.filename, amount);
         }
         else
         {
@@ -176,20 +176,21 @@ public static class Marketplace
         }
     }
 
-    public static void RPC_SendCollectedNotice(long sender, string recipeName, int amount)
+    public static void RPC_SendCollectedNotice(long sender, string filename, int amount)
     {
-        if (!PurchaseLedger.ContainsKey(recipeName)) return;
-        if (PurchaseLedger[recipeName] > amount)
+        if (!PurchaseLedger.ContainsKey(filename)) return;
+        if (PurchaseLedger[filename] > amount)
         {
-            PurchaseLedger[recipeName] -= amount;
+            PurchaseLedger[filename] -= amount;
         }
         else
         {
-            PurchaseLedger.Remove(recipeName);
+            PurchaseLedger.Remove(filename);
         }
         SyncLedger();
     }
 
+    public static bool IsBlueprintPendingCollection(string filename) => PurchaseLedger.ContainsKey(filename);
     public static bool GetRevenue(Player player, out List<KeyValuePair<BlueprintRecipe, int>> revenue)
     {
         revenue = new List<KeyValuePair<BlueprintRecipe, int>>();

@@ -189,6 +189,12 @@ public class PlanContainer : MonoBehaviour
         {
             plan.m_terrains = terrainComps;
             count["_TerrainModifiers"] = terrainComps.Count;
+            for (int i = 0; i < terrainComps.Count; ++i)
+            {
+                PlanTerrain terrain = terrainComps[i];
+                GameObject go = terrain.Create(container.transform, i);
+                go.transform.localPosition -= groupCenter;
+            }
         }
 
         Piece component = container.AddComponent<Piece>();

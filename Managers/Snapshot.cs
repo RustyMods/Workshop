@@ -14,7 +14,7 @@ public static class Snapshot
         {
             icon.name = iconName;
             byte[] bytes = icon.texture.EncodeToPNG();
-            string filePath = Path.Combine(ConfigManager.ConfigFolderPath, icon.name + ".png");
+            string filePath = Path.Combine(BlueprintMan.GetIconPath(), icon.name + ".png");
             File.WriteAllBytes(filePath, bytes);
         }
     }

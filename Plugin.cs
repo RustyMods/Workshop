@@ -52,7 +52,6 @@ public class Workshop : BaseUnityPlugin, OnHideTextReceiver
     private void OnDestroy()
     {
         Config.Save();
-        Marketplace.Save();
     }
 
     public static void LogDebug(string msg)

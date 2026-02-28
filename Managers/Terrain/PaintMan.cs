@@ -51,6 +51,13 @@ public static class PaintMan
             prefix: new HarmonyMethod(AccessTools.Method(typeof(PaintMan), nameof(Patch_ClutterSystem_GetGroundInfo))));
     }
 
+    public static bool TryGetPaintType(string name, out TerrainModifier.PaintType paintType)
+    {
+        if (Enum.TryParse(name, true, out paintType)) return true;
+        if (paintTypes.TryGetValue(name,  out paintType)) return true;
+        return false;
+    }
+
     public static TerrainModifier.PaintType GetPaintType(string name)
     {
         if (Enum.TryParse(name, true, out TerrainModifier.PaintType type)) return type;

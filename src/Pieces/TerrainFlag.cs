@@ -20,7 +20,8 @@ public class TerrainFlag : MonoBehaviour, Interactable, Hoverable, TextReceiver
     public Piece m_piece;
     public CustomProjector m_projector;
     public Renderer[] m_renderers;
-    
+
+    private readonly TerrainOp.Settings settings = new TerrainOp.Settings();
     public TerrainModifier m_terrainModifier;
     public string m_text = "dirt;circle;20;25;true";
     public TerrainModifier.PaintType m_type;
@@ -78,13 +79,19 @@ public class TerrainFlag : MonoBehaviour, Interactable, Hoverable, TextReceiver
     {
         if (!interactable) return false;
         
-        if (alt || !m_isReady)
+        if (!m_isReady)
         {
             TextInput.instance.RequestText(this, "$label_set_terrain", 100);
             return false;
         }
         
         if (!m_isReady) return false;
+
+        if (hold)
+        {
+            TextInput.instance.RequestText(this, "$label_set_terrain", 100);
+            return false;
+        }
 
         if (!m_projector.enabled)
         {
@@ -106,8 +113,34 @@ public class TerrainFlag : MonoBehaviour, Interactable, Hoverable, TextReceiver
         m_terrainModifier.m_smoothRadius = m_smoothRadius;
         m_terrainModifier.m_square = m_isSquare;
         m_terrainModifier.m_level = m_level;
+        
+        settings.m_levelOffset = m_terrainModifier.m_levelOffset;
+        settings.m_level = m_terrainModifier.m_level;
+        settings.m_levelRadius = m_terrainModifier.m_levelRadius;
+        settings.m_square = m_terrainModifier.m_square;
+        settings.m_smooth = m_terrainModifier.m_smooth;
+        settings.m_smoothRadius = m_terrainModifier.m_smoothRadius;
+        settings.m_smoothPower = m_terrainModifier.m_smoothPower;
+        settings.m_paintCleared = m_terrainModifier.m_paintCleared;
+        settings.m_paintHeightCheck = m_terrainModifier.m_paintHeightCheck;
+        settings.m_paintType = m_terrainModifier.m_paintType;
+        settings.m_paintRadius = m_terrainModifier.m_paintRadius;
 
-        if (poke)
+        if (!poke) return true;
+        
+        if (alt)
+        {
+            TerrainComp compiler = TerrainComp.FindTerrainCompiler(transform.position);
+            if (compiler != null)
+            {
+                ZPackage pkg = new ZPackage();
+                pkg.Write(transform.position);
+                settings.Serialize(pkg);
+                compiler.m_nview.InvokeRPC("ApplyOperation", pkg);
+                ZNetScene.instance.Destroy(gameObject);
+            }
+        }
+        else
         {
             m_terrainModifier.PokeHeightmaps();
         }
@@ -139,8 +172,17 @@ public class TerrainFlag : MonoBehaviour, Interactable, Hoverable, TextReceiver
         if (!interactable) return "";
         
         StringBuilder sb = new StringBuilder();
-        sb.Append("[<color=yellow><b>$KEY_Use</b></color>] $hover_poke");
-        sb.Append("\n[<color=yellow><b>$KEY_AltPlace + $KEY_Use</b></color>] $label_set_terrain");
+
+        if (m_isReady)
+        {
+            sb.Append("[<color=yellow><b>$KEY_Use</b></color>] $hover_poke");
+            sb.Append("\n[<color=yellow><b>Hold $KEY_Use</b></color>] $label_set_terrain");
+            sb.Append("\n[<color=yellow><b>$KEY_AltPlace + $KEY_Use</b></color>] Apply");
+        }
+        else
+        {
+            sb.Append("\n[<color=yellow><b>$KEY_Use</b></color>] $label_set_terrain");
+        }
         
         return Localization.instance.Localize(sb.ToString());
     }
@@ -153,7 +195,10 @@ public class TerrainFlag : MonoBehaviour, Interactable, Hoverable, TextReceiver
     {
         m_text = text;
         string[] parts = text.Split(';');
-        TerrainModifier.PaintType type = parts.GetEnum(0, TerrainModifier.PaintType.Dirt);
+        if (!PaintMan.TryGetPaintType(parts.GetString(0), out TerrainModifier.PaintType type))
+        {
+            type = parts.GetEnum(0, TerrainModifier.PaintType.Dirt);
+        }
         bool square = parts.GetString(1, "circle")
             .Equals("square", StringComparison.InvariantCultureIgnoreCase);
         float radius = parts.GetFloat(2, 2f);

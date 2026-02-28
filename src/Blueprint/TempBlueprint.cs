@@ -42,8 +42,19 @@ public class TempBlueprint
             }
         };
 
-        Workshop.LogDebug("Transferred temp blueprint to recipe");
+        Workshop.LogDebug($"Transferred temp {settings.filename} blueprint to recipe");
         return true;
+    }
+
+    public void Dispose()
+    {
+        if (!Loaded) return;
+        UnityEngine.Object.Destroy(prefab);
+        UnityEngine.Object.Destroy(icon);
+        prefab = null;
+        icon = null;
+        piece = null;
+        Loaded = false;
     }
     
     public GameObject Load()
@@ -154,9 +165,11 @@ public class TempBlueprint
         icon.name = prefab.name;
         settings.Icon = prefab.name;
         byte[] bytes = icon.texture.EncodeToPNG();
-        string filePath = Path.Combine(ConfigManager.ConfigFolderPath, prefab.name + ".png");
+        string filename = prefab.name + ".png";
+        string filePath = Path.Combine(BlueprintMan.GetIconPath(), filename);
         File.WriteAllBytes(filePath, bytes);
-        
+        BlueprintMan.icons[filename] = bytes;
+
         Workshop.LogDebug($"Generated icon for {prefab.name}");
     }
 }

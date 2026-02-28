@@ -167,6 +167,7 @@
         <Compile Include="src\Marketplace\Marketplace.cs" />
         <Compile Include="src\Patches\Container.cs" />
         <Compile Include="src\Patches\CraftingStation.cs" />
+        <Compile Include="src\Patches\Game.cs" />
         <Compile Include="src\Patches\GameCamera.cs" />
         <Compile Include="src\Patches\Hud.cs" />
         <Compile Include="src\Patches\InventoryGui.cs" />

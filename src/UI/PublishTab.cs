@@ -163,21 +163,28 @@ public class PublishTab : Tab, OnHideTextReceiver
         Preview.UpdateBlueprintPreview(temp);
         Preview.EnableBlueprintPreview(gui, true);
         selectedBlueprint = temp;
-        PieceRequirements requirements = new PieceRequirements(temp.settings.requirements);
-        currentPrice = requirements.ToCustomString();
         currentRequirements = null;
+        PieceRequirements requirements;
 
-        if (BlueprintMan.recipes.ContainsKey(temp.settings.filename))
+        if (BlueprintMan.recipes.TryGetValue(temp.settings.filename, out BlueprintRecipe recipe))
         {
+            requirements = new PieceRequirements(recipe.settings.requirements);
             SetCraftButtonLabel("$label_update_price");
         }
         else
         {
+            requirements = new PieceRequirements(temp.settings.requirements);
             SetCraftButtonLabel("$label_set_price");
         }
+        
+        currentPrice = requirements.ToCustomString();
+        bool canSet = !Marketplace.IsBlueprintPendingCollection(temp.settings.filename);
+        if (!canSet && Player.m_localPlayer)
+        {
+            Player.m_localPlayer.Message(MessageHud.MessageType.Center, "Blueprint pending collection, cannot update");
+        }
+        gui.m_craftButton.interactable = canSet;
         SetCraftButtonTooltip("$tooltip_input_price");
-
-        gui.m_craftButton.interactable = true;
         SetupRequirementList(gui, requirements.ToPieceRequirement());
         SetMinStationLevelIcon(gui, 0, defaultMinStationLevelIconColor, defaultMinStationLevelIcon);
     }

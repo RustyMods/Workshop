@@ -6,6 +6,7 @@ namespace Workshop;
 public static partial class Patches
 {
     private static float defaultCameraMaxDistance;
+    private static float defaultCameraMinDistance;
     
     [HarmonyPatch(typeof(GameCamera), nameof(GameCamera.Awake))]
     private static class GameCamera_Awake_Patch
@@ -13,12 +14,26 @@ public static partial class Patches
         private static void Postfix(GameCamera __instance)
         {
             defaultCameraMaxDistance = __instance.m_maxDistance;
+            defaultCameraMinDistance = __instance.m_minDistance;
         }
     }
 
     [HarmonyPatch(typeof(GameCamera), nameof(GameCamera.UpdateCamera))]
     private static class GameCamera_UpdateCamera_Patch
     {
+        private static void Prefix(GameCamera __instance)
+        {
+            if (AreaProjector.instance != null)
+            {
+                __instance.m_minDistance = __instance.m_distance;
+                __instance.m_maxDistance = __instance.m_distance;
+            }
+            else
+            {
+                __instance.m_minDistance = defaultCameraMinDistance;
+                __instance.m_maxDistance = defaultCameraMaxDistance;
+            }
+        }
         private static void Postfix(GameCamera __instance, float dt)
         {
             if (!Player.m_localPlayer) return;

@@ -29,7 +29,7 @@ public abstract class ISelectMany : ITool
     
     public static bool OnPlace(Player player, Piece piece, Vector3 pos, Quaternion rot, bool doAttack)
     {
-        if (!piece.IsBlueprint() || player.m_placementGhost == null) return false;
+        if (!piece.IsBlueprint()|| player.m_placementGhost == null) return false;
         for (int i = 0; i < player.m_placementGhost.transform.childCount; ++i)
         {
             Transform child = player.m_placementGhost.transform.GetChild(i);

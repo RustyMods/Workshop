@@ -17,7 +17,7 @@ public class GhostHammer : IHammer
         ItemDrop hammer = PrefabManager.GetPrefab("Hammer").GetComponent<ItemDrop>();
         item = asset.GetComponent<ItemDrop>();
         item.m_itemData.m_shared.m_triggerEffect = hammer.m_itemData.m_shared.m_triggerEffect;
-        table = new GameObject("_PlanHammerPieceTable", typeof(PieceTable)).GetComponent<PieceTable>();
+        table = new GameObject("_PlanHammerPieceTable_RS").AddComponent<PieceTable>();
         table.transform.SetParent(MockManager.transform);
         table.m_pieces.AddRange(hammer.m_itemData.m_shared.m_buildPieces.m_pieces);
         table.m_categories.AddRange(hammer.m_itemData.m_shared.m_buildPieces.m_categories);
@@ -53,7 +53,8 @@ public class GhostHammer : IHammer
     {
         if (prefab.GetComponent<ConstructionWard>() || 
             prefab.GetComponent<TerrainFlag>() || 
-            prefab.name == "piece_blueprint_bench_RS") return;
+            prefab.name == "piece_blueprint_bench_RS" || 
+            prefab.name.EndsWith("_planned")) return;
 
         if (!vanillaPieces.Contains(prefab))
         {

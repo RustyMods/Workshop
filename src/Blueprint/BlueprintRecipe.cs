@@ -7,7 +7,7 @@ namespace Workshop;
 public class BlueprintRecipe : Recipe
 {
     public Blueprint blueprint;
-    public BlueprintSettings settings = new BlueprintSettings();
+    public readonly BlueprintSettings settings = new BlueprintSettings();
 
     public GameObject prefab;
     public Sprite icon;
@@ -15,6 +15,17 @@ public class BlueprintRecipe : Recipe
     
     public bool Loaded;
     public bool doSnapshot;
+    
+    public void Dispose()
+    {
+        if (!Loaded) return;
+        UnityEngine.Object.Destroy(prefab);
+        UnityEngine.Object.Destroy(icon);
+        prefab = null;
+        icon = null;
+        piece = null;
+        Loaded = false;
+    }
     
     public GameObject Load()
     {
@@ -163,8 +174,10 @@ public class BlueprintRecipe : Recipe
         icon.name = prefab.name;
         settings.Icon = prefab.name;
         byte[] bytes = icon.texture.EncodeToPNG();
-        string filePath = Path.Combine(ConfigManager.ConfigFolderPath, prefab.name + ".png");
+        string filename = prefab.name + ".png";
+        string filePath = Path.Combine(BlueprintMan.GetIconPath(), filename);
         File.WriteAllBytes(filePath, bytes);
+        BlueprintMan.icons[filename] = bytes;
         
         Workshop.LogDebug($"Generated icon for {prefab.name}");
     }

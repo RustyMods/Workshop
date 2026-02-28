@@ -1,7 +1,5 @@
 piece_construction_ward: Construction Ward
 piece_construction_ward_desc: Builder's delight
-item_mock_hammer: Plan Hammer
-item_mock_hammer_desc: Build templates
 piece_select_many: Select Many
 piece_select_many_desc: Select connected pieces
 piece_select_area: Select Area
@@ -9,20 +7,20 @@ piece_select_area_desc: Select pieces within radius
 piece_move: Move
 piece_move_desc: Move piece
 piece_select: Select
-piece_select_desc: Select hover piece to place new
+piece_select_desc: Select object to place
 piece_remove_area: Remove Area
 piece_remove_area_desc: Remove objects within area
 piece_remove_many: Remove Many
-piece_remove_many_desc: Remove all connected pieces
+piece_remove_many_desc: Remove connected pieces
 tutorial_construction_ward_topic: Construction Ward
 tutorial_construction_ward_label: Construction Ward
 tutorial_construction_ward_text: Place resources within ward to begin realizing your blueprint
 hover_connected_pieces: Connected Pieces
 piece_category_blueprint: Blueprints
-item_blueprint_build_hammer: Blueprint Hammer
-item_blueprint_build_hammer_desc: Build blueprints
-item_plan_hammer: Plan Hammer
-item_plan_hammer_desc: Build ghost pieces
+item_blueprint_build_hammer_rs: Blueprint Hammer
+item_blueprint_build_hammer_rs_desc: Build blueprints
+item_plan_hammer_rs: Plan Hammer
+item_plan_hammer_rs_desc: Build ghost pieces
 item_blueprint: Blueprint
 piece_blueprint_table: Blueprint Table
 piece_blueprint_table_desc: Purchase Blueprints

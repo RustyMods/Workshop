@@ -21,4 +21,10 @@ public static partial class Patches
             BlueprintMan.OnZNetAwake(__instance);
         }
     }
+
+    [HarmonyPatch(typeof(ZNet), nameof(ZNet.Save))]
+    private static class ZNet_Save_Patch
+    {
+        private static void Prefix() => Marketplace.Save();
+    }
 }

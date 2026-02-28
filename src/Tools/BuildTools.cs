@@ -23,8 +23,8 @@ public static class BuildTools
         
         GameObject terrainFlag = SetupFlagMarker();
         
-        ghostHammer = new GhostHammer("$item_plan_hammer", blueprintStation);
-        planHammer = new BlueprintHammer("$item_blueprint_build_hammer", blueprintStation);
+        ghostHammer = new GhostHammer("$item_plan_hammer_rs", blueprintStation);
+        planHammer = new BlueprintHammer("$item_blueprint_build_hammer_rs", blueprintStation);
 
         planHammer.InsertPiece(blueprintTable, 1);
         planHammer.InsertPiece(terrainFlag, 1);
@@ -114,7 +114,6 @@ public static class BuildTools
                     marker.SetSmoothRadius(ghost.m_smoothRadius);
                     marker.SetLevel(ghost.m_level);
                     marker.Poke(true);
-                    marker.interactable = false;
                 }
             }
         }
