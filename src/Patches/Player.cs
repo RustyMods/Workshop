@@ -172,6 +172,8 @@ public static partial class Patches
     [HarmonyPatch(typeof(Player), nameof(Player.UpdatePlacementGhost))]
     private static class Player_UpdatePlacementGhost_Patch
     {
+        private static bool Prefix() => !Workshop.instance.isSaving;
+        
         private static void Postfix(Player __instance)
         {
             if (__instance.m_placementMarkerInstance == null || __instance.m_placementGhost == null ||

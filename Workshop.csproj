@@ -222,8 +222,8 @@
     <ItemGroup>
         <Content Include=".gitignore" />
         <EmbeddedResource Include="assets\buildtoolbundle" />
+        <Content Include="assets\Blueprint.shader" />
         <Content Include="assets\buildtoolbundle.manifest" />
-        <Content Include="assets\Force Field.shader" />
         <Content Include="blueprints\MeadowHut.blueprint" />
         <Content Include="blueprints\tavern.vbuild" />
         <Content Include="environment.props" />

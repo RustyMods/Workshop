@@ -25,8 +25,6 @@ public class Workshop : BaseUnityPlugin, OnHideTextReceiver
     public BlueprintRecipe recipe;
     public BlueprintSettings settings;
     public bool isSaving;
-    public string oldFilePath = "";
-    public string oldRecipeName = "";
     
     public void Awake()
     {
