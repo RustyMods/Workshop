@@ -11,24 +11,23 @@ public abstract class IPaint
 {
     public static readonly Dictionary<Piece, IPaint> m_paintTools = new();
     private static readonly Dictionary<TerrainModifier.PaintType, IPaint> m_paintMask = new();
-   
     public static bool IsPaintTool(Piece piece) => m_paintTools.ContainsKey(piece);
     public static bool TryGetPaintTool(TerrainModifier.PaintType type, out IPaint paintTool) => m_paintMask.TryGetValue(type, out paintTool);
-    
-    public readonly int index;
-    public readonly Piece piece;
-    public readonly TerrainOp terrainOp;
+
+    protected readonly Piece piece;
+    protected readonly TerrainOp terrainOp;
     public bool adminOnly;
     public bool isBiomePaint;
+    public bool overrideAlpha = false;
+    public bool blend = true;
 
     protected IPaint(string id, string name, TerrainModifier.PaintType type, int index = 1)
     {
-        this.index = index;
         ItemDrop cultivator = PrefabManager.GetPrefab("Cultivator").GetComponent<ItemDrop>();
         List<GameObject> pieces = cultivator.m_itemData.m_shared.m_buildPieces.m_pieces;
-        GameObject cultivate = pieces[0];
+        GameObject replant = pieces[1];
         
-        GameObject prefab = Object.Instantiate(cultivate.gameObject, MockManager.transform);
+        GameObject prefab = Object.Instantiate(replant.gameObject, MockManager.transform);
         prefab.name = id;
         piece = prefab.GetComponent<Piece>();
         piece.m_icon = BuildTools.ghostHammer.GetIcon();

@@ -1,12 +1,18 @@
 ﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Workshop;
 
 public class GhostHammer : IHammer
 {
+    public static GhostHammer tool;
+    private readonly List<GameObject> vanillaPieces = new();
+    private readonly List<GameObject> unknownPieces = new();
+    private readonly List<Piece> unknownPieces2 = new();
     public GhostHammer(string sharedName, CraftingStation station) : base(sharedName, station)
     {
+        tool = this;
         GameObject asset = AssetBundleManager.LoadAsset<GameObject>("buildtoolbundle", "BlueprintHammer_RS");
         ItemDrop hammer = PrefabManager.GetPrefab("Hammer").GetComponent<ItemDrop>();
         item = asset.GetComponent<ItemDrop>();
@@ -36,7 +42,28 @@ public class GhostHammer : IHammer
         recipe.Register();
         PrefabManager.RegisterPrefab(asset);
         ConfigManager._ghostHammerRecipe.SettingChanged += OnRecipeChange;
+        
+        vanillaPieces.AddRange(hammer.m_itemData.m_shared.m_buildPieces.m_pieces);
+        vanillaPieces.AddRange(PrefabManager.GetPrefab("Cultivator").GetComponent<ItemDrop>().m_itemData.m_shared.m_buildPieces.m_pieces);
+        vanillaPieces.AddRange(PrefabManager.GetPrefab("Hoe").GetComponent<ItemDrop>().m_itemData.m_shared.m_buildPieces.m_pieces);
+        vanillaPieces.AddRange(PrefabManager.GetPrefab("Feaster").GetComponent<ItemDrop>().m_itemData.m_shared.m_buildPieces.m_pieces);
     }
+
+    public override void AddPiece(GameObject prefab)
+    {
+        if (prefab.GetComponent<ConstructionWard>() || 
+            prefab.GetComponent<TerrainFlag>() || 
+            prefab.name == "piece_blueprint_bench_RS") return;
+
+        if (!vanillaPieces.Contains(prefab))
+        {
+            unknownPieces.Add(prefab);
+            if (prefab.TryGetComponent(out Piece component)) unknownPieces2.Add(component);
+        }
+        base.AddPiece(prefab);
+    }
+
+    public bool IsUnknownPiece(Piece piece) => unknownPieces2.Contains(piece);
 
     public override void OnRecipeChange(object sender, EventArgs e)
     {

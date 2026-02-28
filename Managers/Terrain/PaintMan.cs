@@ -203,16 +203,25 @@ public static class PaintMan
 
         if (withinBounds && passesHeightCheck)
         {
-            float blendWeight = Mathf.Pow(1f - Mathf.Clamp01(distanceFromCenter / radiusInVertices), 0.1f);
+            Color color;
             Color current = comp.m_hmap.GetPaintMask(vertex_x, vertex_y);
-            float alpha = current.a;
+
+            if (paint.blend)
+            {
+                float blendWeight = Mathf.Pow(1f - Mathf.Clamp01(distanceFromCenter / radiusInVertices), 0.1f);
+                float alpha = current.a;
+                color = Color.Lerp(current, paint.GetColor(), blendWeight);
+                if (!paint.overrideAlpha) color.a = alpha;
+            }
+            else
+            {
+                color = paint.GetColor();
+                if (!paint.overrideAlpha) color.a = current.a;
+            }
             
-            Color blendedColor = Color.Lerp(current, paint.GetColor(), blendWeight);
-            blendedColor.a = alpha;
-                
             int index = vertex_y * gridStride + vertex_x;
             comp.m_modifiedPaint[index] = true;
-            comp.m_paintMask[index] = blendedColor;
+            comp.m_paintMask[index] = color;
 
             if (paint.isBiomePaint && terrainColors != null)
             {
@@ -287,7 +296,7 @@ public static class PaintMan
         return colors[index];
     }
 
-    public static Heightmap.Biome GetBiomeFromMesh(
+    private static Heightmap.Biome GetBiomeFromMesh(
         this Heightmap hm, 
         Vector3 point, 
         float oceanLevel = 0.02f, 

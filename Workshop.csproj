@@ -145,7 +145,6 @@
         <Compile Include="Managers\Snapshot.cs" />
         <Compile Include="Managers\Terrain\PaintMan.cs" />
         <Compile Include="Managers\Terrain\TerrainColors.cs" />
-        <Compile Include="Managers\Terrain\TexMan.cs" />
         <Compile Include="Plugin.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
         <Compile Include="src\Behaviours\AreaProjector.cs" />
@@ -185,7 +184,10 @@
         <Compile Include="src\Tools\BuildTools.cs" />
         <Compile Include="src\Tools\Paint\AshlandsGrass.cs" />
         <Compile Include="src\Tools\Paint\BlackForestGrass.cs" />
+        <Compile Include="src\Tools\Paint\MeadowsGrass.cs" />
         <Compile Include="src\Tools\Paint\PlainsGrass.cs" />
+        <Compile Include="src\Tools\Paint\Snow.cs" />
+        <Compile Include="src\Tools\Paint\SwampGrass.cs" />
         <Compile Include="src\Tools\Plan\ISelectMany.cs" />
         <Compile Include="src\Tools\Plan\ITool.cs" />
         <Compile Include="src\Tools\Plan\Move.cs" />
@@ -197,7 +199,6 @@
         <Compile Include="src\Tools\Hammer\BlueprintHammer.cs" />
         <Compile Include="src\Tools\Hammer\GhostHammer.cs" />
         <Compile Include="src\Tools\Hammer\IHammer.cs" />
-        <Compile Include="src\Tools\Paint\CultivatedGrass.cs" />
         <Compile Include="src\Tools\Paint\IPaint.cs" />
         <Compile Include="src\Tools\Paint\Lava.cs" />
         <Compile Include="src\Tools\Paint\MistlandsGrass.cs" />
@@ -233,6 +234,11 @@
         <EmbeddedResource Include="icons\select_bounds_icon.png" />
         <EmbeddedResource Include="icons\remove_bounds_icon.png" />
         <EmbeddedResource Include="icons\lava_icon.png" />
+        <EmbeddedResource Include="icons\plains_grass_icon.png" />
+        <EmbeddedResource Include="icons\grass_icon.png" />
+        <EmbeddedResource Include="icons\paved_grass_icon.png" />
+        <EmbeddedResource Include="icons\paved_dark_icon.png" />
+        <EmbeddedResource Include="icons\ashlands_grass_icon.png" />
         <Content Include="ILRepack.targets" />
         <Content Include="Libs\ServerSync.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

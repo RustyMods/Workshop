@@ -10,9 +10,11 @@ public static partial class Patches
     {
         private static void Postfix(Hud __instance, Player player)
         {
+            //TODO: figure out a better place to do this rather than update
             if (player.InPlaceMode() && !__instance.m_pieceSelectionWindow.activeSelf) return;
             Select.hovering = null;
             ISelectMany.tempPiece = null;
+            Move.movingPiece = null;
         }
     }
 

@@ -5,13 +5,13 @@ namespace Workshop;
 
 public abstract class IHammer
 {
-    public string sharedName;
-    public ItemDrop item;
-    public Recipe recipe;
+    public readonly string sharedName;
+    protected ItemDrop item;
+    protected Recipe recipe;
     public CraftingStation station;
     public PieceTable table;
-    
-    public IHammer(string sharedName, CraftingStation station)
+
+    protected IHammer(string sharedName, CraftingStation station)
     {
         this.sharedName = sharedName;
         this.station = station;
@@ -25,7 +25,7 @@ public abstract class IHammer
         else table.m_pieces.Insert(index, prefab);
     }
 
-    public void AddPiece(GameObject prefab)
+    public virtual void AddPiece(GameObject prefab)
     {
         if (table.m_pieces.Contains(prefab)) return;
         table.m_pieces.Add(prefab);

@@ -40,11 +40,13 @@ public static class BuildTools
         _ = new AshlandsGrass("piece_paint_ashlands_grass", "Ashlands Grass");
         _ = new PavedGrass("piece_paint_paved_grass", "Paved Grass");
         _ = new PavedDark("piece_paint_paved_cultivated", "Paved Dark");
-        _ = new CultivatedGrass("piece_paint_cultivated_grass", "Cultivated Grass");
         _ = new MistlandsGrass("piece_paint_mistlands", "Mistlands Grass");
         _ = new MistlandsDirt("piece_paint_mistlands_dirt", "Mistlands Dirt");
         _ = new BlackForestGrass("piece_paint_blackforest_grass", "Black Forest Grass");
         _ = new PlainsGrass("piece_paint_plains_grass", "Plains Grass");
+        _ = new Snow("piece_paint_snow", "Snow");
+        _ = new SwampGrass("piece_paint_swamp_grass", "Swamp Grass");
+        _ = new MeadowsGrass("piece_paint_meadows_grass", "Meadows Grass");
         toolsLoaded = true;
     }
 

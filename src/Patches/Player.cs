@@ -199,6 +199,10 @@ public static partial class Patches
     {
         private static void Postfix(Player __instance, ref List<Piece> __result)
         {
+            if (!ConfigManager.ShowAllPieces && __instance.GetRightItem().IsGhostHammer())
+            {
+                __result.RemoveAll(GhostHammer.tool.IsUnknownPiece);
+            }
             if (Terminal.m_cheat) return;
             __result.RemoveAll(IsAdminPiece);
         }

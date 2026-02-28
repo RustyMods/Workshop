@@ -7,6 +7,7 @@ public class MistlandsGrass : IPaint
     public MistlandsGrass(string id, string name, int index = 1) : base(id, name, PaintMan.GetPaintType("Mistlands"), index)
     {
         isBiomePaint = true;
+        piece.m_icon = SpriteManager.GetSprite("grass_icon.png");
     }
 
     public override Color GetColor() => new Color(0f, 0f, 0f, 1f);

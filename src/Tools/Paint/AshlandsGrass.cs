@@ -8,9 +8,12 @@ public class AshlandsGrass : IPaint
         base(id, name, PaintMan.GetPaintType("AshlandsGrass"), index)
     {
         isBiomePaint = true;
+        overrideAlpha = true;
+        blend = false;
+        piece.m_icon = SpriteManager.GetSprite("ashlands_grass_icon.png");
     }
     
-    public override Color GetColor() => new Color(1f, 1f, 1f, 0f);
+    public override Color GetColor() => new Color(0f, 0f, 0f, 0f);
     
     public override Color32 GetBiomeColor() => new (byte.MaxValue, 0,  0, byte.MaxValue);
 
