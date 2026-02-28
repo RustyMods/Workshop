@@ -203,6 +203,34 @@ public static class PaintMan
 
         if (withinBounds && passesHeightCheck)
         {
+            int index = vertex_y * gridStride + vertex_x;
+            PaintMask(comp, paint, index, vertex_x, vertex_y, distanceFromCenter, radiusInVertices);
+            PaintTerrain(terrainColors, paint, index, vertex_x, vertex_y, distanceFromCenter, radiusInVertices);
+            if (paint.reset)
+            {
+                comp.m_modifiedHeight[index] = false;
+                comp.m_levelDelta[index] = 0f;
+                comp.m_smoothDelta[index] = 0f;
+            }
+        }
+    }
+
+    private static void PaintMask(
+        TerrainComp comp, 
+        IPaint paint, 
+        int index, 
+        int vertex_x, 
+        int vertex_y, 
+        float distanceFromCenter, 
+        float radiusInVertices)
+    {
+        if (paint.reset)
+        {
+            comp.m_modifiedPaint[index] = false;
+            comp.m_paintMask[index] = new Color(0f, 0f, 0f, 1f);
+        }
+        else
+        {
             Color color;
             Color current = comp.m_hmap.GetPaintMask(vertex_x, vertex_y);
 
@@ -218,15 +246,42 @@ public static class PaintMan
                 color = paint.GetColor();
                 if (!paint.overrideAlpha) color.a = current.a;
             }
-            
-            int index = vertex_y * gridStride + vertex_x;
+        
             comp.m_modifiedPaint[index] = true;
             comp.m_paintMask[index] = color;
+        }
+    }
 
-            if (paint.isBiomePaint && terrainColors != null)
+    private static void PaintTerrain(
+        TerrainColors colors, 
+        IPaint paint, 
+        int index, 
+        int vertex_x, 
+        int vertex_y,
+        float distanceFromCenter, 
+        float radiusInVertices)
+    {
+        if (!paint.isBiomePaint || colors == null) return;
+
+        if (paint.reset)
+        {
+            colors.ResetTerrain(index);   
+        }
+        else
+        {
+            Color32 color;
+            if (paint.blendTerrain)
             {
-                terrainColors.SetBiomeColor(index, paint.GetBiomeColor());
+                float weight = Mathf.Pow(1f - Mathf.Clamp01(distanceFromCenter / radiusInVertices), 0.1f);
+                Color32 current = colors.GetCurrentBiomeColor(index, vertex_x, vertex_y);
+                color = Color32.Lerp(current, paint.GetBiomeColor(), weight);
             }
+            else
+            {
+                color = paint.GetBiomeColor();
+            }
+                
+            colors.SetBiomeColor(index, color);
         }
     }
 

@@ -36,17 +36,19 @@ public static class BuildTools
         _ = new RemoveByArea("piece_remove_area", "$piece_remove_area");
         _ = new RemoveByBounds("piece_remove_many", "$piece_remove_many");
         
-        _ = new Lava("piece_paint_lava", "Lava");
-        _ = new AshlandsGrass("piece_paint_ashlands_grass", "Ashlands Grass");
-        _ = new PavedGrass("piece_paint_paved_grass", "Paved Grass");
-        _ = new PavedDark("piece_paint_paved_cultivated", "Paved Dark");
-        _ = new MistlandsGrass("piece_paint_mistlands", "Mistlands Grass");
-        _ = new MistlandsDirt("piece_paint_mistlands_dirt", "Mistlands Dirt");
-        _ = new BlackForestGrass("piece_paint_blackforest_grass", "Black Forest Grass");
-        _ = new PlainsGrass("piece_paint_plains_grass", "Plains Grass");
-        _ = new Snow("piece_paint_snow", "Snow");
-        _ = new SwampGrass("piece_paint_swamp_grass", "Swamp Grass");
-        _ = new MeadowsGrass("piece_paint_meadows_grass", "Meadows Grass");
+        _ = new Lava("piece_paint_lava", "$piece_lava");
+        _ = new AshlandsGrass("piece_paint_ashlands_grass", "$piece_ashlands_grass");
+        _ = new PavedGrass("piece_paint_paved_grass", "$piece_paved_grass");
+        _ = new PavedDark("piece_paint_paved_cultivated", "$piece_paved_dark");
+        _ = new MistlandsGrass("piece_paint_mistlands", "$piece_mistlands_grass");
+        _ = new MistlandsDirt("piece_paint_mistlands_dirt", "$piece_mistlands_dirt");
+        _ = new BlackForestGrass("piece_paint_blackforest_grass", "$piece_blackforest_grass");
+        _ = new PlainsGrass("piece_paint_plains_grass", "$piece_plains_grass");
+        _ = new Snow("piece_paint_snow", "$piece_snow");
+        _ = new SwampGrass("piece_paint_swamp_grass", "$piece_swamp_grass");
+        _ = new MeadowsGrass("piece_paint_meadows_grass", "$piece_meadows_grass");
+        _ = new Reset("piece_paint_reset", "$piece_reset_all");
+        
         toolsLoaded = true;
     }
 

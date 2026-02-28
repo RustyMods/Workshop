@@ -104,7 +104,7 @@ public class Workshop : BaseUnityPlugin, OnHideTextReceiver
                 Invoke(nameof(SaveDescription), 0.5f);
             };
             
-            TextInput.instance.RequestText(this, "Set Name", 100);
+            TextInput.instance.RequestText(this, "$label_set_name", 100);
         }
         else
         {
@@ -116,7 +116,7 @@ public class Workshop : BaseUnityPlugin, OnHideTextReceiver
                 settings.Name = text;
                 Invoke(nameof(SaveDescription), 0.5f);
             };
-            TextInput.instance.RequestText(this, "Update Name", 100);
+            TextInput.instance.RequestText(this, "$label_update_name", 100);
         }
     }
 
@@ -124,16 +124,16 @@ public class Workshop : BaseUnityPlugin, OnHideTextReceiver
     {
         OnGetText = () => settings.Description;
         TextInput.instance.RequestText(this, recipe != null ? 
-            "Update Description" : 
-            "Set Description", 100);
+            "$label_update_description" : 
+            "$label_set_description", 100);
         OnTextReceived = desc =>
         {
             settings.Description = desc;
             OnTextReceived = null;
             OnGetText = null;
             Player.m_localPlayer.Message(MessageHud.MessageType.Center, recipe != null ? 
-                $"Updated blueprint: {settings.filename}" : 
-                $"Saved blueprint: {settings.filename}");
+                $"$msg_updated_blueprint: {settings.filename}" : 
+                $"$msg_saved_blueprint: {settings.filename}");
             Write();
         };
     }

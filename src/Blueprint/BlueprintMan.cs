@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using ServerSync;
 using UnityEngine;
@@ -9,6 +10,7 @@ namespace Workshop;
 
 public enum FileType
 {
+    Unknown,
     Blueprint, 
     VBuild
 }
@@ -36,7 +38,7 @@ public class RecipeTask : ITask
     {
         if (!BlueprintMan.recipes.TryGetValue(name, out BlueprintRecipe recipe)) return;
         recipe.m_resources = new PieceRequirements(requirements).ToPieceRequirement();
-        if (!BlueprintMan.blueprints.TryGetValue(name, out Blueprint blueprint)) return;
+        if (!BlueprintMan.publishBlueprints.TryGetValue(name, out Blueprint blueprint)) return;
         blueprint.Format(recipe.settings);
         BlueprintMan.SyncBlueprints();
     }
@@ -48,7 +50,7 @@ public class BlueprintTask : ITask
     public Blueprint blueprint;
     public override void Execute()
     {
-        if (BlueprintMan.blueprints.ContainsKey(blueprint.filename)) return;
+        if (BlueprintMan.publishBlueprints.ContainsKey(blueprint.filename)) return;
         BlueprintRecipe recipe = ScriptableObject.CreateInstance<BlueprintRecipe>();
         recipe.name = blueprint.filename;
         recipe.settings.Parse(blueprint);
@@ -61,8 +63,8 @@ public class BlueprintTask : ITask
             recipe.PostProcess();
             BuildTools.planHammer.AddPiece(container);
         }
-        blueprint.Write(); // save or update blueprint locally
-        BlueprintMan.blueprints[blueprint.filename] = blueprint;
+        blueprint.Write(Path.Combine(Path.Combine(BlueprintMan.GetPublishPath(), blueprint.filename))); // save or update blueprint locally
+        BlueprintMan.publishBlueprints[blueprint.filename] = blueprint;
         BlueprintMan.recipes[blueprint.filename] = recipe;
         BlueprintMan.SyncBlueprints();
     }
@@ -70,18 +72,54 @@ public class BlueprintTask : ITask
 
 public static class BlueprintMan
 {
-    private static readonly CustomSyncedValue<string> sync = new(ConfigManager.ConfigSync, "Workshop.Blueprint.Marketplace");
-    
-    public static readonly Dictionary<string, byte[]> icons = new();
-    public static readonly Dictionary<string, TempBlueprint> temps = new();
-    public static readonly Dictionary<string, BlueprintRecipe> recipes = new();
-    public static readonly Dictionary<string, Blueprint> blueprints = new();
-    
-    public static readonly Dictionary<string, string> blueprintFilePaths = new();
-    public static readonly Dictionary<string, Blueprint> localBlueprints = new();
-
-    public static readonly Queue<ITask> tasks = new();
+    private const string PUBLISH = "Publish";
+    private const string LOCAL = "Local";
+    private const string ICON = "Icons";
+    private static readonly string PublishPath;
+    private static readonly string LocalPath;
+    private static readonly string IconPath;
+    private static readonly CustomSyncedValue<string> sync;
+    public static readonly Dictionary<string, byte[]> icons;
+    public static readonly Dictionary<string, TempBlueprint> temps;
+    public static readonly Dictionary<string, BlueprintRecipe> recipes;
+    public static readonly Dictionary<string, string> blueprintFilePaths;
+    public static readonly Dictionary<string, Blueprint> localBlueprints;
+    public static readonly Dictionary<string, Blueprint> publishBlueprints;
+    public static readonly Queue<ITask> tasks;
     private static Task CurrentTask;
+
+    static BlueprintMan()
+    {
+        PublishPath = Path.Combine(ConfigManager.GetFolderPath(), PUBLISH);
+        LocalPath = Path.Combine(ConfigManager.GetFolderPath(), LOCAL);
+        IconPath = Path.Combine(ConfigManager.GetFolderPath(), ICON);
+        sync = new CustomSyncedValue<string>(ConfigManager.ConfigSync, "Workshop.Blueprint.Marketplace");
+        icons = new Dictionary<string, byte[]>();
+        temps = new Dictionary<string, TempBlueprint>();
+        recipes = new Dictionary<string, BlueprintRecipe>();
+        blueprintFilePaths = new Dictionary<string, string>();
+        localBlueprints = new Dictionary<string, Blueprint>();
+        publishBlueprints = new Dictionary<string, Blueprint>();
+        tasks = new Queue<ITask>();
+    }
+
+    public static string GetPublishPath()
+    {
+        if (!Directory.Exists(PublishPath)) Directory.CreateDirectory(PublishPath);
+        return PublishPath;
+    }
+
+    public static string GetLocalPath()
+    {
+        if (!Directory.Exists(LocalPath)) Directory.CreateDirectory(LocalPath);
+        return LocalPath;
+    }
+
+    public static string GetIconPath()
+    {
+        if (!Directory.Exists(IconPath)) Directory.CreateDirectory(IconPath);
+        return IconPath;
+    }
 
     private static Task Process()
     {
@@ -110,7 +148,7 @@ public static class BlueprintMan
 
     public static void SyncBlueprints()
     {
-        string text = ConfigManager.Serialize(blueprints);
+        string text = ConfigManager.Serialize(publishBlueprints);
         sync.Value = text;
     }
 
@@ -120,7 +158,7 @@ public static class BlueprintMan
         Dictionary<string, Blueprint> incoming = ConfigManager.Deserialize<Dictionary<string, Blueprint>>(sync.Value);
         foreach (KeyValuePair<string, Blueprint> kvp in incoming)
         {
-            if (blueprints.ContainsKey(kvp.Key))
+            if (publishBlueprints.ContainsKey(kvp.Key))
             {
                 if (recipes.TryGetValue(kvp.Key, out BlueprintRecipe recipe))
                 {
@@ -149,7 +187,7 @@ public static class BlueprintMan
                 {
                     temps.Remove(kvp.Key);
                 }
-                blueprints[kvp.Key] = kvp.Value;
+                publishBlueprints[kvp.Key] = kvp.Value;
                 recipes[kvp.Key] = recipe;
             }
         }
@@ -161,61 +199,83 @@ public static class BlueprintMan
     
     public static void ReadFiles()
     {
-        string folderPath = ConfigManager.GetFolderPath();
-        string[] files = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
-
-        for (int i = 0; i < files.Length; ++i)
+        string[] iconPaths = Directory.GetFiles(GetIconPath(), "*.png", SearchOption.AllDirectories);
+        for (int i = 0; i < iconPaths.Length; ++i)
         {
-            string path = files[i];
+            string path = iconPaths[i];
+            string filename = Path.GetFileName(path);
+            byte[] bytes = File.ReadAllBytes(path);
+            icons[filename] = bytes;
+        }
+
+        string[] publishPaths = Directory.GetFiles(GetPublishPath(), "*", SearchOption.AllDirectories);
+        for (int i = 0; i < publishPaths.Length; ++i)
+        {
+            string path = publishPaths[i];
             string extension = Path.GetExtension(path);
             string filename = Path.GetFileName(path);
-            
-            if (extension == ".png")
+            FileType type = FileType.Unknown;
+            if (extension == ".blueprint")
             {
-                byte[] bytes = File.ReadAllBytes(path);
-                icons[filename] = bytes;
-                Workshop.LogDebug($"Imported preview: {filename}");
-            }
-            else if (extension == ".blueprint")
-            {
-                Blueprint blueprint = new Blueprint(filename, FileType.Blueprint, File.ReadAllLines(path));
-                localBlueprints[filename] = blueprint;
-                blueprintFilePaths[filename] = path;
-                Workshop.LogDebug($"Imported blueprint: {filename}");
+                type = FileType.Blueprint;
             }
             else if (extension == ".vbuild")
             {
-                Blueprint blueprint = new Blueprint(filename, FileType.VBuild, File.ReadAllLines(path));
-                localBlueprints[filename] = blueprint;
-                blueprintFilePaths[filename] = path;
-                Workshop.LogDebug($"Imported vbuild: {filename}");
+                type = FileType.VBuild;
             }
-            else
+
+            if (type == FileType.Unknown) continue;
+            
+            Blueprint blueprint = new Blueprint(filename, type, File.ReadAllLines(path));
+            publishBlueprints[filename] = blueprint;
+            blueprintFilePaths[filename] = path;
+        }
+        
+        string[] localPaths = Directory.GetFiles(GetLocalPath(), "*", SearchOption.AllDirectories);
+        for (int i = 0; i < localPaths.Length; ++i)
+        {
+            string path = localPaths[i];
+            string extension = Path.GetExtension(path);
+            string filename = Path.GetFileName(path);
+
+            if (publishBlueprints.ContainsKey(filename)) continue;
+
+            FileType type = extension switch
             {
-                Workshop.LogDebug($"Unknown file: {filename}");
-            }
+                ".blueprint" => FileType.Blueprint,
+                ".vbuild" => FileType.VBuild,
+                _ => FileType.Unknown
+            };
+
+            if (type == FileType.Unknown) continue;
+            
+            Blueprint blueprint = new Blueprint(filename, type, File.ReadAllLines(path));
+            localBlueprints[filename] = blueprint;
+            blueprintFilePaths[filename] = path;
         }
     }
 
     public static void OnZNetAwake(ZNet net)
     {
+        foreach (KeyValuePair<string, Blueprint> kvp in localBlueprints)
+        {
+            TempBlueprint temp = kvp.Value.ToTemp();
+            temp.blueprint = kvp.Value;
+            temps[kvp.Key] = temp;
+        }
+        
         if (net.IsServer())
         {
-            // automatically publish local blueprints ??
-            foreach (KeyValuePair<string, Blueprint> kvp in localBlueprints)
+            foreach (KeyValuePair<string, Blueprint> kvp in publishBlueprints)
             {
                 BlueprintRecipe recipe = kvp.Value.ToRecipe();
+                recipe.blueprint = kvp.Value;
                 recipes[kvp.Key] = recipe;
             }
+            SyncBlueprints();
         }
         else
         {
-            foreach (KeyValuePair<string, Blueprint> kvp in localBlueprints)
-            {
-                TempBlueprint temp = kvp.Value.ToTemp();
-                temps[kvp.Key] = temp;
-            }
-        
             sync.ValueChanged += OnSyncChanged;
         }
     }

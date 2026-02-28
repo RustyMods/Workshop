@@ -11,12 +11,12 @@ public class TempBlueprint
     public Blueprint blueprint;
     public readonly BlueprintSettings settings = new();
 
-    public GameObject prefab;
+    private GameObject prefab;
     public Sprite icon;
-    public Piece piece;
-    
-    public bool Loaded;
-    public bool doSnapshot;
+    private Piece piece;
+
+    private bool Loaded;
+    private bool doSnapshot;
 
     public bool TransferTo(BlueprintRecipe recipe)
     {

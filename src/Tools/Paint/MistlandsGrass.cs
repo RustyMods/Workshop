@@ -23,6 +23,7 @@ public class MistlandsDirt : IPaint
         PaintMan.GetPaintType("MistlandsDirt"), index)
     {
         isBiomePaint = true;
+        piece.m_icon = SpriteManager.GetSprite("mistlands_dirt_icon.png");
     }
     
     public override Color GetColor() => new Color(1f, 0f, 0f, 0f);

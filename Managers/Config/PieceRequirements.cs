@@ -44,7 +44,7 @@ public class PieceRequirements
         Requirements = new List<Requirement>();
         for (int i = 0; i < reqs.Length; ++i)
         {
-            var req = reqs[i];
+            Piece.Requirement req = reqs[i];
             Requirements.Add(new Requirement
             {
                 itemName = req.m_resItem.name,

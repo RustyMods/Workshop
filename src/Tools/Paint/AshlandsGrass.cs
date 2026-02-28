@@ -9,7 +9,6 @@ public class AshlandsGrass : IPaint
     {
         isBiomePaint = true;
         overrideAlpha = true;
-        blend = false;
         piece.m_icon = SpriteManager.GetSprite("ashlands_grass_icon.png");
     }
     

@@ -7,12 +7,7 @@ public class Lava : IPaint
     public Lava(string id, string name, int index = 1) : base(id, name, PaintMan.GetPaintType("Lava"), index)
     {
         isBiomePaint = true;
-        terrainOp.m_settings.m_square = false;
-        terrainOp.m_settings.m_smooth = true;
-        terrainOp.m_settings.m_raise = true;
-        terrainOp.m_settings.m_raiseRadius = 2f;
-        terrainOp.m_settings.m_raiseDelta = 1;
-        terrainOp.m_settings.m_raisePower = 0.1f;
+        overrideAlpha = true;
         piece.m_icon = SpriteManager.GetSprite("lava_icon.png");
     }
     

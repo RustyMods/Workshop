@@ -17,10 +17,13 @@ public abstract class IPaint
     protected readonly Piece piece;
     protected readonly TerrainOp terrainOp;
     public bool adminOnly;
-    public bool isBiomePaint;
     public bool overrideAlpha = false;
     public bool blend = true;
+    
+    public bool isBiomePaint;
+    public bool blendTerrain = true;
 
+    public bool reset;
     protected IPaint(string id, string name, TerrainModifier.PaintType type, int index = 1)
     {
         ItemDrop cultivator = PrefabManager.GetPrefab("Cultivator").GetComponent<ItemDrop>();

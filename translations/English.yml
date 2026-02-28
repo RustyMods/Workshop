@@ -66,3 +66,35 @@ tooltip_connections: Toggle connection effect visuals
 label_searching: Searching...
 label_requirements: Requirements...
 label_loading: Loading...
+label_set_name: Set Name
+label_update_name: Update Name
+label_set_description: Set Description
+label_update_description: Update Description
+msg_updated_blueprint: Updated blueprint
+msg_saved_blueprint: Saved blueprint
+label_update_price: Update Price
+
+piece_lava: Lava
+piece_lava_desc: Blend lava into the terrain
+piece_ashlands_grass: Ashlands Grass
+piece_ashlands_grass_desc: Blend ash into the terrain
+piece_paved_grass: Paved Moss
+piece_paved_grass_desc: Blend pavement into green terrain
+piece_paved_dark: Dark Pave
+piece_paved_dark_desc: Slightly darker pavement
+piece_mistlands_grass: Mistlands Grass
+piece_mistlands_grass_desc: Blend mistlands terrain
+piece_mistlands_dirt: Mistlands Dirt
+piece_mistlands_dirt_desc: Blend mistlands dirt
+piece_blackforest_grass: Forest Grass
+piece_blackforest_grass_desc: Blend black forest terrain
+piece_plains_grass: Plains Grass
+piece_plains_grass_desc: Blend plains terrain
+piece_snow: Snow
+piece_snow_desc: Blend snow into the terrain
+piece_swamp_grass: Swamp Grass
+piece_swamp_grass_desc: Blend swamp into the terrain
+piece_meadows_grass: Grass
+piece_meadows_grass_desc: Blend meadows grass
+piece_reset_all: Reset All
+piece_reset_all_desc: Reset terrain, vegetation and height modifications

@@ -89,11 +89,9 @@ public class PublishTab : Tab, OnHideTextReceiver
 
     public override bool UpdateRecipe(InventoryGui gui, Player player, float dt)
     {
-        if (BlueprintMan.localBlueprints.Count <= 0 || 
-            currentStation == null || 
-            button.interactable) return false;
-
-        if (confirming && currentRequirements != null && selectedBlueprint != null)
+        if (confirming && 
+            currentRequirements != null &&
+            selectedBlueprint != null)
         {
             confirmTimer += dt;
             gui.m_craftProgressPanel.gameObject.SetActive(true);
@@ -102,16 +100,16 @@ public class PublishTab : Tab, OnHideTextReceiver
             gui.m_craftProgressBar.SetValue(confirmTimer);
             if (confirmTimer > confirmLengthSeconds)
             {
-                confirmTimer = 0f;
-                confirming = false;
                 selectedBlueprint.settings.requirements.Clear();
                 selectedBlueprint.settings.requirements.AddRange(currentRequirements.Requirements);
                 selectedBlueprint.blueprint.Format(selectedBlueprint.settings);
                 SendToServer(player, selectedBlueprint);
+                
+                confirmTimer = 0f;
+                confirming = false;
                 currentRequirements = null;
                 currentPrice = "";
                 selectedBlueprint = null;
-                gui.m_craftButton.interactable = false;
                 HideRequirements(gui);
                 gui.m_craftItemDoneEffects.Create(player.transform.position, Quaternion.identity);
                 gui.UpdateCraftingPanel();
@@ -171,7 +169,7 @@ public class PublishTab : Tab, OnHideTextReceiver
 
         if (BlueprintMan.recipes.ContainsKey(temp.settings.filename))
         {
-            SetCraftButtonLabel("Update Price");
+            SetCraftButtonLabel("$label_update_price");
         }
         else
         {
@@ -191,8 +189,7 @@ public class PublishTab : Tab, OnHideTextReceiver
         currentPrice = text;
         isTyping = false;
         
-        PieceRequirements update = new PieceRequirements(text);
-        currentRequirements = update;
+        currentRequirements = new PieceRequirements(text);
         craftButtonLabel.text = Localization.instance.Localize(craftLabel);
         craftButtonTooltip.m_text = Localization.instance.Localize(craftTooltip);
         SetupRequirementList(InventoryGui.instance, currentRequirements.ToPieceRequirement());

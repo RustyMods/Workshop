@@ -38,6 +38,7 @@ public class BlueprintSettings
         }
 
         if (string.IsNullOrEmpty(Name)) Name = plan.filename.Split('.').First();
+        filename = plan.filename;
     }
     private void ParseBlueprint(Blueprint plan)
     {

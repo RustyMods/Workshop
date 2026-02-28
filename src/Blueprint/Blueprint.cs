@@ -84,7 +84,7 @@ public class Blueprint
     {
         if (string.IsNullOrEmpty(filepath))
         {
-            filepath = Path.Combine(ConfigManager.ConfigFolderPath, filename);
+            filepath = Path.Combine(BlueprintMan.GetLocalPath(), filename);
         }
         File.WriteAllLines(filepath, lines);
         BlueprintMan.blueprintFilePaths[filename] = filepath;

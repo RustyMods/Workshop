@@ -186,6 +186,7 @@
         <Compile Include="src\Tools\Paint\BlackForestGrass.cs" />
         <Compile Include="src\Tools\Paint\MeadowsGrass.cs" />
         <Compile Include="src\Tools\Paint\PlainsGrass.cs" />
+        <Compile Include="src\Tools\Paint\Reset.cs" />
         <Compile Include="src\Tools\Paint\Snow.cs" />
         <Compile Include="src\Tools\Paint\SwampGrass.cs" />
         <Compile Include="src\Tools\Plan\ISelectMany.cs" />
@@ -239,6 +240,11 @@
         <EmbeddedResource Include="icons\paved_grass_icon.png" />
         <EmbeddedResource Include="icons\paved_dark_icon.png" />
         <EmbeddedResource Include="icons\ashlands_grass_icon.png" />
+        <EmbeddedResource Include="icons\reset_icon.png" />
+        <EmbeddedResource Include="icons\swamp_grass_icon.png" />
+        <EmbeddedResource Include="icons\forest_grass_icon.png" />
+        <EmbeddedResource Include="icons\snow_icon.png" />
+        <EmbeddedResource Include="icons\mistlands_dirt_icon.png" />
         <Content Include="ILRepack.targets" />
         <Content Include="Libs\ServerSync.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

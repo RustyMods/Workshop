@@ -92,6 +92,13 @@ public class TerrainColors : MonoBehaviour
         m_terrainMask[index] = color;
     }
 
+    public void ResetTerrain(int index)
+    {
+        if (!m_initialized) return;
+        m_modifiedTerrain[index] = false;
+        m_terrainMask[index] = new Color32();
+    }
+
     public void ApplyToHeightmap(Heightmap hm)
     {
         if (!m_initialized) return;
@@ -115,6 +122,13 @@ public class TerrainColors : MonoBehaviour
         }
             
         hm.m_renderMesh.SetColors(colors);
+    }
+
+    public Color32 GetCurrentBiomeColor(int index, int x, int y)
+    {
+        bool modified = m_modifiedTerrain[index];
+        if (modified) return m_terrainMask[index];
+        return m_terrainComp.m_hmap.GetBiomeColor(x, y);
     }
 
     public Heightmap.Biome GetBiome(Heightmap hm, Vector3 point)
