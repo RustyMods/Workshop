@@ -231,7 +231,7 @@ public class GhostPiece : MonoBehaviour
     public static void PlacePiece(Player player, GameObject prefab, Vector3 pos, Quaternion rot, bool doAttack, Plan plan = null)
     {
         if (prefab == null) return;
-        
+        // Workshop.LogDebug($"Placed ghost piece: {prefab.name}");
         GameObject instance = Instantiate(prefab, pos, rot);
         instance.GetComponent<WearNTear>()?.OnPlaced();
         

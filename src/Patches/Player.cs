@@ -60,6 +60,11 @@ public static partial class Patches
                 return false;
             }
 
+            if (IPaint.IsPaintTool(piece))
+            {
+                return true;
+            }
+
             if (__instance.GetRightItem().IsPlanHammer()) return true;
             GhostPiece.PlacePiece(__instance, piece.gameObject, pos, rot, doAttack);
             return false;
@@ -98,6 +103,17 @@ public static partial class Patches
         private static void Prefix(Player __instance)
         {
             SelectByArea.SetRepairMode(false);
+        }
+
+        private static void Postfix(Player __instance)
+        {
+            if (__instance.m_placementGhost == null) return;
+
+            if (!__instance.m_placementGhost.TryGetComponent(out Piece piece)) return;
+            if (IPaint.TryGetPaintTool(piece.m_name, out IPaint _))
+            {
+                __instance.m_placementGhost.AddComponent<PaintOptions>();
+            }
         }
         
         private static void Finalizer(Player __instance)

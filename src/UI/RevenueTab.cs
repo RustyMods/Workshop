@@ -49,9 +49,9 @@ public class RevenueTab : Tab
 
     private void UpdateSelectedRecipe(InventoryGui gui, BlueprintRecipe recipe)
     {
-        Preview.EnableBlueprintPreview(gui, true);
+        Preview.instance.Show();
         craftButtonLabel.text = Localization.instance.Localize(craftLabel);
-        Preview.UpdateBlueprintPreview(recipe);
+        Preview.instance.Setup(recipe.settings, recipe.icon);
         SetupRequirementList(gui, recipe.m_resources);
         SetMinStationLevelIcon(gui, 0, defaultMinStationLevelIconColor, defaultMinStationLevelIcon);
     }

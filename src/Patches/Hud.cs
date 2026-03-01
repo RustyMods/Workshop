@@ -33,6 +33,14 @@ public static partial class Patches
             return false;
         }
 
+        private static void Postfix(Hud __instance, Piece piece)
+        {
+            if (IPaint.IsPaintTool(piece) && PaintOptions.instance != null)
+            {
+                __instance.m_pieceDescription.text = PaintOptions.instance.m_pieceInfo;
+            }
+        }
+
         private static void DisablePieceRequirements(Hud hud, Piece piece)
         {
             for (int i = 0; i < hud.m_requirementItems.Length; ++i)

@@ -23,7 +23,7 @@ public static partial class Patches
     {
         private static void Prefix(GameCamera __instance)
         {
-            if (AreaProjector.instance != null)
+            if (AreaProjector.instance != null || PaintOptions.instance != null)
             {
                 __instance.m_minDistance = __instance.m_distance;
                 __instance.m_maxDistance = __instance.m_distance;

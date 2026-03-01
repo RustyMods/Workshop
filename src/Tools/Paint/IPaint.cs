@@ -11,11 +11,14 @@ public abstract class IPaint
 {
     public static readonly Dictionary<Piece, IPaint> m_paintTools = new();
     private static readonly Dictionary<TerrainModifier.PaintType, IPaint> m_paintMask = new();
+    private static readonly Dictionary<string, IPaint> m_paintToolNamed = new();
     public static bool IsPaintTool(Piece piece) => m_paintTools.ContainsKey(piece);
     public static bool TryGetPaintTool(TerrainModifier.PaintType type, out IPaint paintTool) => m_paintMask.TryGetValue(type, out paintTool);
+    public static bool TryGetPaintTool(Piece piece, out IPaint paintTool) => m_paintTools.TryGetValue(piece, out paintTool);
+    public static bool TryGetPaintTool(string name, out IPaint paintTool) => m_paintToolNamed.TryGetValue(name, out paintTool);
 
     protected readonly Piece piece;
-    protected readonly TerrainOp terrainOp;
+    public readonly TerrainOp terrainOp;
     public bool adminOnly;
     public bool overrideAlpha = true;
     public bool blend = true;
@@ -43,9 +46,22 @@ public abstract class IPaint
         terrainOp.m_settings.m_level = false;
         terrainOp.m_settings.m_smooth = false;
         terrainOp.m_settings.m_raise = false;
+        terrainOp.m_settings.m_smoothPower = 0f;
 
         m_paintTools[piece] = this;
         m_paintMask[type] = this;
+        m_paintToolNamed[piece.m_name] = this;
+
+        terrainOp.m_settings.m_paintRadius = 5f;
+        
+        GameObject guardStone = PrefabManager.GetPrefab("dverger_guardstone");
+        PrivateArea area = guardStone.GetComponent<PrivateArea>();
+        GameObject marker = area.m_areaMarker.gameObject;
+        GameObject instance = Object.Instantiate(marker, piece.transform);
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+        instance.name = "projector";
+        instance.SetActive(true);
         
         BuildTools.ghostHammer.InsertPiece(prefab, index);
     }

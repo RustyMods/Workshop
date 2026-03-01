@@ -60,9 +60,13 @@ public class StationTab : Tab
 
     private void SetupDescription(InventoryGui gui, ConstructionWard ward)
     {
+        GridView.instance.Hide();
         gui.m_recipeDecription.text = WardDescription.tooltip;
+        gui.m_recipeDecription.enabled = true;
         gui.m_recipeIcon.sprite = ward.m_piece.m_icon;
+        gui.m_recipeIcon.enabled = true;
         gui.m_recipeName.text = Localization.instance.Localize(ConstructionWard.SHARED_NAME);
+        gui.m_recipeName.enabled = true;
     }
 
     private void SetupStationList(InventoryGui gui, ConstructionWard ward)

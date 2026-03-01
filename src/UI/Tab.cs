@@ -324,8 +324,8 @@ public abstract class Tab
         craftButtonLabel.text = Localization.instance.Localize(defaultCraftLabel);
         progressLabel.text = Localization.instance.Localize(defaultProgressLabel);
         gui.m_tabCraft.gameObject.SetActive(true);
-        Preview.EnableBlueprintPreview(gui, false);
-        GridView.DisableGridView(gui);
+        Preview.instance.Hide();
+        GridView.instance.Hide();
         SetMinStationLevelIcon(gui, 1, defaultMinStationLevelIconColor, defaultMinStationLevelIcon);
     }
 

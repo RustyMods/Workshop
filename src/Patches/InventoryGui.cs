@@ -177,12 +177,11 @@ public static partial class Patches
         {
             if (__instance.m_selectedRecipe.Recipe is BlueprintRecipe blueprint)
             {
-                Preview.EnableBlueprintPreview(__instance, true);
-                Preview.UpdateBlueprintPreview(blueprint);
+                Preview.instance.Setup(blueprint.settings, blueprint.icon);
             }
             else
             {
-                Preview.EnableBlueprintPreview(__instance, false);
+                Preview.instance.Hide();
             }
         }
     }

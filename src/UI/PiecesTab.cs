@@ -154,7 +154,8 @@ public class PiecesTab : Tab
         }
         catch (OperationCanceledException)
         {
-            player.Message(MessageHud.MessageType.Center, "Loading pieces cancelled");
+            Workshop.LogDebug("Load description cancelled");
+            GridView.instance.Hide();
         }
         finally
         {
@@ -202,6 +203,8 @@ public class PiecesTab : Tab
         }
         catch (OperationCanceledException)
         {
+            Workshop.LogDebug("Loading pieces cancelled");
+            GridView.instance.Hide();
             isLoading = false;
             isLoadingRequirements = false;
             loadingLength = 0f;
@@ -217,7 +220,7 @@ public class PiecesTab : Tab
             if (ghosts.Count > 0)
             {
                 List<Piece.Requirement> requirements = ward.GetTotalBuildRequirements();
-                GridView.UpdateGridView(gui, ward, requirements);
+                GridView.instance.Setup(ward, requirements);
                 await Task.Delay(TimeSpan.FromMilliseconds(1), token);
                 bool noCost = player.NoCostCheat() || ZoneSystem.instance.GetGlobalKey(GlobalKeys.NoBuildCost);
                 List<CraftingStation> stations = ward.GetRequiredCraftingStations().ToList();
@@ -258,6 +261,8 @@ public class PiecesTab : Tab
         }
         catch (OperationCanceledException)
         {
+            Workshop.LogDebug("Loading requirements cancelled");
+            GridView.instance.Hide();
             isLoading = false;
             isLoadingRequirements = false;
             loadingLength = 0f;
@@ -312,7 +317,7 @@ public class PiecesTab : Tab
     {
         if (element.piece == null) return;
         gui.m_recipeName.text = Localization.instance.Localize(element.piece.m_name + $" x{element.count}");
-        GridView.DisableGridView(gui);
+        GridView.instance.Hide();
         StringBuilder sb = new StringBuilder(256);
         sb.Append($"{element.piece.m_description}\n");
 

@@ -160,8 +160,8 @@ public class PublishTab : Tab, OnHideTextReceiver
 
     private void OnTempSelected(InventoryGui gui, TempBlueprint temp)
     {
-        Preview.UpdateBlueprintPreview(temp);
-        Preview.EnableBlueprintPreview(gui, true);
+        Preview.instance.Setup(temp.settings, temp.icon);
+        Preview.instance.Show();
         selectedBlueprint = temp;
         currentRequirements = null;
         PieceRequirements requirements;

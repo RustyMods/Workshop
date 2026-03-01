@@ -186,6 +186,7 @@
         <Compile Include="src\Tools\Paint\AshlandsGrass.cs" />
         <Compile Include="src\Tools\Paint\BlackForestGrass.cs" />
         <Compile Include="src\Tools\Paint\MeadowsGrass.cs" />
+        <Compile Include="src\Tools\Paint\PaintOptions.cs" />
         <Compile Include="src\Tools\Paint\PlainsGrass.cs" />
         <Compile Include="src\Tools\Paint\Reset.cs" />
         <Compile Include="src\Tools\Paint\Snow.cs" />
@@ -215,6 +216,7 @@
         <Compile Include="src\UI\Tab.cs" />
         <Compile Include="src\UI\Preview.cs" />
         <Compile Include="src\UI\PiecesTab.cs" />
+        <Compile Include="src\UI\View.cs" />
         <Compile Include="src\ZDOHelper.cs" />
         <Compile Include="Tutorials\Tutorial.cs" />
         <Compile Include="VersionHandshake.cs" />
