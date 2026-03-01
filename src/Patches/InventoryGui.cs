@@ -24,6 +24,7 @@ public static partial class Patches
             Tab.tabs.Clear();
             
             _ = new Preview(__instance);
+            _ = new GridView(__instance);
             
             _ = new PiecesTab(__instance, 2);
             _ = new StationTab(__instance, 3);

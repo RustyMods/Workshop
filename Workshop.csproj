@@ -207,6 +207,7 @@
         <Compile Include="src\Tools\Paint\PavedDark.cs" />
         <Compile Include="src\Tools\Paint\PavedGrass.cs" />
         <Compile Include="src\Tools\TerrainModifiers.cs" />
+        <Compile Include="src\UI\GridView.cs" />
         <Compile Include="src\UI\OnHideTextReceiver.cs" />
         <Compile Include="src\UI\PublishTab.cs" />
         <Compile Include="src\UI\RevenueTab.cs" />

@@ -17,7 +17,7 @@ public abstract class IPaint
     protected readonly Piece piece;
     protected readonly TerrainOp terrainOp;
     public bool adminOnly;
-    public bool overrideAlpha = false;
+    public bool overrideAlpha = true;
     public bool blend = true;
     
     public bool isBiomePaint;

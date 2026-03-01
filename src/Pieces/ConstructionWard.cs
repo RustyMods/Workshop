@@ -30,9 +30,9 @@ public class ConstructionWard : MonoBehaviour
     public Container m_container;
 
     public List<GhostPiece> m_ghostPieces = new();
-    private readonly List<PieceData> m_disabledPieceData = new();
-    private readonly Dictionary<string, PieceData> m_pieces = new();
-    private readonly List<Piece.Requirement> m_totalRequirements = new();
+    private readonly List<PieceBlock> m_disabledPieceData = new();
+    private readonly Dictionary<string, PieceBlock> m_blocks = new();
+    private readonly Dictionary<string, Piece.Requirement> m_totalRequirements = new Dictionary<string, Piece.Requirement>();
     public bool reloadGhosts = true;
     public bool isSearching;
     public float ghostsCount;
@@ -188,7 +188,7 @@ public class ConstructionWard : MonoBehaviour
     public void UpdateGhostPieces()
     {
         if (isBuilding || isSearching || !reloadGhosts) return;
-        TimeSpan delay = TimeSpan.FromMilliseconds(5f);
+        TimeSpan delay = TimeSpan.FromMilliseconds(2.5f);
         LoadingGhostTask = LoadGhostPieces(GhostPiece.m_instances, delay);
     }
 
@@ -198,8 +198,9 @@ public class ConstructionWard : MonoBehaviour
         ghostsCount = ghosts.Count + 1;
         ghostProcessed = 0.0f;
         m_ghostPieces.Clear();
-        m_pieces.Clear();
+        m_blocks.Clear();
         m_totalRequirements.Clear();
+       
         for (int i = 0; i < ghosts.Count; ++i)
         {
             await Task.Delay(delay);
@@ -210,43 +211,32 @@ public class ConstructionWard : MonoBehaviour
             m_ghostPieces.Add(ghost);
             if (ghost.m_piece != null)
             {
-                if (m_pieces.TryGetValue(ghost.m_piece.m_name, out PieceData data))
+                if (m_blocks.TryGetValue(ghost.m_piece.m_name, out PieceBlock data))
                 {
-                    data.ghosts.Add(ghost);
-                    ++data.count;
+                    data.Add(ghost);
                 }
                 else
                 {
-                    PieceData pieceData = new PieceData
+                    PieceBlock block = new PieceBlock
                     {
                         piece = ghost.m_piece,
                         count = 1
                     };
-                    pieceData.ghosts.Add(ghost);
+                    block.Add(ghost);
 
-                    m_pieces[ghost.m_piece.m_name] = pieceData;
+                    m_blocks[ghost.m_piece.m_name] = block;
                 }
             }
         }
 
-        foreach (KeyValuePair<string, PieceData> kvp in m_pieces)
+        foreach (KeyValuePair<string, PieceBlock> kvp in m_blocks)
         {
-            kvp.Value.GetRequirements();
-        }
-        
-        Dictionary<string, Piece.Requirement> requirements = new();
-
-        List<PieceData> pieces = m_pieces.Values.ToList();
-        for (int i = 0; i < pieces.Count; ++i)
-        {
-            PieceData data = pieces[i];
-            if (data.IsDisabled(this)) continue;
-            List<Piece.Requirement> reqs = data.GetRequirements();
+            List<Piece.Requirement> reqs = kvp.Value.GetRequirements();
             for (int j = 0; j < reqs.Count; ++j)
             {
                 Piece.Requirement requirement = reqs[j];
                 string item = requirement.m_resItem.m_itemData.m_shared.m_name;
-                if (requirements.TryGetValue(item, out Piece.Requirement req))
+                if (m_totalRequirements.TryGetValue(item, out Piece.Requirement req))
                 {
                     req.m_amount += requirement.m_amount;
                 }
@@ -257,13 +247,11 @@ public class ConstructionWard : MonoBehaviour
                         m_resItem = requirement.m_resItem,
                         m_amount = requirement.m_amount
                     };
-                    requirements.Add(item, res);
+                    m_totalRequirements.Add(item, res);
                 }
             }
         }
         
-        m_totalRequirements.AddRange(requirements.Values);
-
         isSearching = false;
         ghostsCount = 1;
         ghostProcessed = 0.0f;
@@ -272,11 +260,11 @@ public class ConstructionWard : MonoBehaviour
     }
 
     public List<GhostPiece> GetGhostPieces() => m_ghostPieces;
-    public List<PieceData> GetPieces() => m_pieces.Values.ToList();
+    public List<PieceBlock> GetPieces() => m_blocks.Values.ToList();
 
     public List<Piece.Requirement> GetTotalBuildRequirements()
     {
-        return m_totalRequirements;
+        return m_totalRequirements.Values.ToList();
     }
 
     public HashSet<CraftingStation> GetRequiredCraftingStations()
@@ -394,7 +382,7 @@ public class ConstructionWard : MonoBehaviour
     public void LoadGhosts()
     {
         m_ghostPieces.Clear();
-        m_pieces.Clear();
+        m_blocks.Clear();
         for (int i = 0; i < GhostPiece.m_instances.Count; ++i)
         {
             GhostPiece ghost = GhostPiece.m_instances[i];
@@ -403,21 +391,21 @@ public class ConstructionWard : MonoBehaviour
             m_ghostPieces.Add(ghost);
             if (ghost.m_piece != null)
             {
-                if (m_pieces.TryGetValue(ghost.m_piece.m_name, out PieceData data))
+                if (m_blocks.TryGetValue(ghost.m_piece.m_name, out PieceBlock data))
                 {
                     data.ghosts.Add(ghost);
                     ++data.count;
                 }
                 else
                 {
-                    PieceData pieceData = new PieceData
+                    PieceBlock pieceData = new PieceBlock
                     {
                         piece = ghost.m_piece,
                         count = 1
                     };
                     pieceData.ghosts.Add(ghost);
         
-                    m_pieces[ghost.m_piece.m_name] = pieceData;
+                    m_blocks[ghost.m_piece.m_name] = pieceData;
                 }
             }
         }
@@ -540,7 +528,7 @@ public class ConstructionWard : MonoBehaviour
         }
     }
 
-    public class PieceData
+    public class PieceBlock
     {
         public readonly List<GhostPiece> ghosts = new List<GhostPiece>();
         public Piece piece;
@@ -550,6 +538,13 @@ public class ConstructionWard : MonoBehaviour
         public List<Piece.Requirement> requirements = new List<Piece.Requirement>();
 
         public bool IsDisabled(ConstructionWard ward) => ward.m_disabledPieceData.Contains(this);
+
+        public void Add(GhostPiece ghost)
+        {
+            if (ghosts.Contains(ghost)) return;
+            ghosts.Add(ghost);
+            ++count;
+        }
         
         public void OnCraft(InventoryGui gui, ConstructionWard ward, string label)
         {
@@ -560,12 +555,37 @@ public class ConstructionWard : MonoBehaviour
                 ward.m_disabledPieceData.Remove(this);
                 icon.color = Color.white;
                 name.fontStyle = FontStyles.Normal;
+                foreach (Piece.Requirement requirement in requirements)
+                {
+                    if (ward.m_totalRequirements.TryGetValue(requirement.m_resItem.m_itemData.m_shared.m_name,
+                            out Piece.Requirement req))
+                    {
+                        req.m_amount += requirement.m_amount;
+                    }
+                    else
+                    {
+                        ward.m_totalRequirements[requirement.m_resItem.m_itemData.m_shared.m_name] =
+                            new Piece.Requirement
+                            {
+                                m_resItem = requirement.m_resItem,
+                                m_amount = requirement.m_amount
+                            };
+                    }
+                }
             }
             else
             {
                 ward.m_disabledPieceData.Add(this);
                 icon.color = Color.black;
                 name.fontStyle = FontStyles.Strikethrough;
+                foreach (Piece.Requirement requirement in requirements)
+                {
+                    if (ward.m_totalRequirements.TryGetValue(requirement.m_resItem.m_itemData.m_shared.m_name,
+                            out Piece.Requirement req))
+                    {
+                        req.m_amount -= requirement.m_amount;
+                    }
+                }
             }
 
             Tab.craftButtonLabel.text = Localization.instance.Localize(label);
@@ -592,7 +612,7 @@ public class ConstructionWard : MonoBehaviour
             for (int i = 0; i < piece.m_resources.Length; ++i)
             {
                 Piece.Requirement req = piece.m_resources[i];
-                requirements.Add(new  Piece.Requirement
+                requirements.Add(new Piece.Requirement
                 {
                     m_resItem = req.m_resItem,
                     m_amount = req.m_amount * count

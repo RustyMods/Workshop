@@ -325,6 +325,7 @@ public abstract class Tab
         progressLabel.text = Localization.instance.Localize(defaultProgressLabel);
         gui.m_tabCraft.gameObject.SetActive(true);
         Preview.EnableBlueprintPreview(gui, false);
+        GridView.DisableGridView(gui);
         SetMinStationLevelIcon(gui, 1, defaultMinStationLevelIconColor, defaultMinStationLevelIcon);
     }
 
