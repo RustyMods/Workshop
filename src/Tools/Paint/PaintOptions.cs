@@ -16,6 +16,10 @@ public class PaintOptions : MonoBehaviour
     private IPaint m_tool;
     
     public string m_pieceInfo = "";
+    private float m_minRadius = 5f;
+    private float m_maxRadius = 20f;
+    private float m_maxSmooth = 10f;
+    private float m_maxRaiseDelta = 20f;
     
     public void Awake()
     {
@@ -51,7 +55,8 @@ public class PaintOptions : MonoBehaviour
 
         if (UpdateSmooth(scroll) || 
             UpdateRadius(scroll) || 
-            UpdateRaise(scroll))
+            UpdateRaise(scroll) ||
+            UpdateLevel(scroll))
         {
             UpdateHudPieceInfo();
         }
@@ -63,14 +68,19 @@ public class PaintOptions : MonoBehaviour
         StringBuilder sb = new StringBuilder(256);
         sb.Append(m_piece.m_description);
         sb.AppendFormat(
-            "\n<color=orange>{0}</color> + <color=orange>{1}</color> +- radius\n<color=orange>{0}</color> + <color=orange>{2}</color> +- smooth\n<color=orange>{0}</color> + <color=orange>{3}</color> +- raise\n", 
+            "\n[<color=orange>{0}</color> + <color=orange>{1}</color>] +- radius" +
+            "\n[<color=orange>{0}</color> + <color=orange>{2}</color>] +- smooth" +
+            "\n[<color=orange>{0}</color> + <color=orange>{3}</color>] +- raise" +
+            "\n[<color=orange>{0}</color> + <color=orange>{4}</color>] +- level", 
             "Scroll",
             KeyCode.LeftShift,
             KeyCode.Q,
-            KeyCode.F);
+            KeyCode.F,
+            KeyCode.L);
         sb.Append($"SmoothPower: <color=orange>{m_tool.terrainOp.m_settings.m_smoothPower}</color>");
         sb.Append($", RaisePower: <color=orange>{m_tool.terrainOp.m_settings.m_raisePower}</color>");
         sb.Append($", RaiseDelta: <color=orange>{m_tool.terrainOp.m_settings.m_raiseDelta}</color>");
+        sb.Append($", LevelOffset: <color=orange>{m_tool.terrainOp.m_settings.m_levelOffset}</color>");
         m_pieceInfo = Localization.instance.Localize(sb.ToString());
     }
 
@@ -82,22 +92,17 @@ public class PaintOptions : MonoBehaviour
         
         if (scroll > Player.m_localPlayer.m_scrollAmountThreshold)
         {
-            ++radius;
+            radius = Mathf.Clamp(radius + 0.5f, m_minRadius, m_maxRadius);
             changed = true;
         }
 
         if (scroll < -Player.m_localPlayer.m_scrollAmountThreshold)
         {
-            --radius;
+            radius = Mathf.Clamp(radius - 0.5f, m_minRadius, m_maxRadius);
             changed = true;
         }
 
         if (!changed) return false;
-        
-        if (radius <= 0.0f)
-        {
-            radius = 1f;
-        }
         
         m_tool.terrainOp.m_settings.m_levelRadius = radius;
         m_tool.terrainOp.m_settings.m_raiseRadius = radius;
@@ -117,22 +122,17 @@ public class PaintOptions : MonoBehaviour
         
         if (scroll > Player.m_localPlayer.m_scrollAmountThreshold)
         {
-            ++m_tool.terrainOp.m_settings.m_smoothPower;
+            m_tool.terrainOp.m_settings.m_smoothPower = Mathf.Clamp(m_tool.terrainOp.m_settings.m_smoothPower + 0.5f, 0f, m_maxSmooth);
             changed = true;
         }
 
         if (scroll < -Player.m_localPlayer.m_scrollAmountThreshold)
         {
-            --m_tool.terrainOp.m_settings.m_smoothPower;
+            m_tool.terrainOp.m_settings.m_smoothPower = Mathf.Clamp(m_tool.terrainOp.m_settings.m_smoothPower - 0.5f, 0f, m_maxSmooth);
             changed = true;
         }
 
         if (!changed) return false;
-
-        if (m_tool.terrainOp.m_settings.m_smoothPower <= 0.0f)
-        {
-            m_tool.terrainOp.m_settings.m_smoothPower = 0.0f;
-        }
 
         m_tool.terrainOp.m_settings.m_smooth = m_tool.terrainOp.m_settings.m_smoothPower > 0f;
         return true;
@@ -147,22 +147,44 @@ public class PaintOptions : MonoBehaviour
         if (scroll > Player.m_localPlayer.m_scrollAmountThreshold)
         {
             m_tool.terrainOp.m_settings.m_raisePower = Mathf.Clamp01(m_tool.terrainOp.m_settings.m_raisePower + 0.1f);
-            m_tool.terrainOp.m_settings.m_raiseDelta += 0.5f;
+            m_tool.terrainOp.m_settings.m_raiseDelta = Mathf.Clamp(m_tool.terrainOp.m_settings.m_raiseDelta + 0.5f, 0f, m_maxRaiseDelta);
             changed = true;
         }
 
         if (scroll < -Player.m_localPlayer.m_scrollAmountThreshold)
         {
             m_tool.terrainOp.m_settings.m_raisePower = Mathf.Clamp01(m_tool.terrainOp.m_settings.m_raisePower - 0.1f);
-            m_tool.terrainOp.m_settings.m_raiseDelta -= 0.5f;
+            m_tool.terrainOp.m_settings.m_raiseDelta = Mathf.Clamp(m_tool.terrainOp.m_settings.m_raiseDelta - 0.5f, 0f, m_maxRaiseDelta);
             changed = true;
         }
 
         if (!changed) return false;
         
-        if (m_tool.terrainOp.m_settings.m_raiseDelta < 0.0f) m_tool.terrainOp.m_settings.m_raiseDelta = 0.0f;
-
         m_tool.terrainOp.m_settings.m_raise = m_tool.terrainOp.m_settings.m_raiseDelta > 0f;
+        return true;
+    }
+
+    private bool UpdateLevel(float scroll)
+    {
+        if (!ZInput.GetKey(KeyCode.L)) return false;
+        
+        bool changed = false;
+        
+        if (scroll > Player.m_localPlayer.m_scrollAmountThreshold)
+        {
+            ++m_tool.terrainOp.m_settings.m_levelOffset;
+            changed = true;
+        }
+
+        if (scroll < -Player.m_localPlayer.m_scrollAmountThreshold)
+        {
+            --m_tool.terrainOp.m_settings.m_levelOffset;
+            changed = true;
+        }
+
+        if (!changed) return false;
+
+        m_tool.terrainOp.m_settings.m_level = m_tool.terrainOp.m_settings.m_levelOffset != 0f;
         return true;
     }
 }
