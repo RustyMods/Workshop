@@ -633,6 +633,12 @@ public class ConstructionWard : MonoBehaviour
             return requirements;
         }
 
+        public bool RequiresStation(ConstructionWard ward, out CraftingStation station)
+        {
+            station = piece.m_craftingStation;
+            return station != null && !ward.HasCraftingStation(station);
+        }
+
         private static void AppendInventoryItems(ref List<Piece.Requirement> requirements, Inventory inventory)
         {
             List<ItemDrop.ItemData> items = inventory.GetAllItems();

@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace Workshop;
 
@@ -16,19 +18,23 @@ public class GridView : View
     private ScrollRect scrollRect;
 
     private const float sensitivity = 250f;
-    private static readonly Vector2 cellSize = new (60f, 60f);
-    private static readonly Vector2 spacing = new (5f, 40f);
-    private static readonly Vector2 size = new(335f, 398.056f);
+    private static readonly Vector2 cellSize = new (64f, 64f);
+    private static readonly Vector2 spacing = new (2f, 2f);
+    private static readonly Vector2 size = new(335f, 320f);
+    private const int minElements = 25;
 
     public GridView(InventoryGui gui) : base(gui)
     {
         instance = this;
+
+        _useName = true;
         
         RectTransform recipeDescription = gui.m_recipeDecription.GetComponent<RectTransform>();
         _root = new GameObject("Workshop.Blueprint.GridView");
         RectTransform rect = _root.AddComponent<RectTransform>();
         rect.SetParent(recipeDescription.parent);
-        rect.anchoredPosition = new Vector2(recipeDescription.anchoredPosition.x, -204.84f);
+        rect.anchoredPosition = new Vector2(recipeDescription.anchoredPosition.x, -225.84f);
+
         rect.pivot = recipeDescription.pivot;
         rect.sizeDelta = size;
         rect.anchorMax = recipeDescription.anchorMax;
@@ -68,7 +74,7 @@ public class GridView : View
         bkg.rectTransform.sizeDelta = rect.sizeDelta;
         bkg.rectTransform.localPosition = new Vector3(-2f, 0f, 0f);
         bkg.sprite = gui.m_recipeListRoot.parent.GetComponent<Image>()?.sprite;
-        bkg.color = new Color(0f, 0f, 0f, 0.5f);
+        bkg.color = new Color(0f, 0f, 0f, 0.0f);
         bkg.type = Image.Type.Sliced;
         icons.AddComponent<RectMask2D>();
         scrollRect = icons.AddComponent<ScrollRect>();
@@ -88,43 +94,22 @@ public class GridView : View
         layout.cellSize = cellSize;
         layout.spacing = spacing;
         layout.padding = new RectOffset(0, 0, 0, (int)cellSize.y);
-        layout.childAlignment = TextAnchor.UpperCenter;
+        layout.childAlignment = TextAnchor.UpperLeft;
+        layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+        LayoutElement layoutElement = list.AddComponent<LayoutElement>();
+        layoutElement.minHeight = listRect.sizeDelta.y;
         ContentSizeFitter fitter = list.AddComponent<ContentSizeFitter>();
         fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         
         scrollRect.content = listRect;
 
-        SetupElement();
+        GameObject source = _inventoryGui.m_recipeRequirementList[0].gameObject;
+        element = Object.Instantiate(source, _root.transform);
+        element.name = "b_res_element";
+        element.SetActive(false);
 
         _root.SetActive(false);
-    }
-
-    private void SetupElement()
-    {
-        element = new GameObject("GridViewElement");
-        element.SetActive(false);
-        Image img = element.AddComponent<Image>();
-        img.preserveAspect = true;
-        img.sprite = _inventoryGui.m_craftingStationIcon.sprite;
-        element.AddComponent<Shadow>();
-        GameObject text = new GameObject("text");
-        RectTransform textRect = text.AddComponent<RectTransform>();
-        textRect.SetParent(img.rectTransform);
-        textRect.localPosition = new Vector3(0f, -40f, 0f);
-        textRect.sizeDelta = cellSize;
-        TextMeshProUGUI tmp = text.AddComponent<TextMeshProUGUI>();
-        tmp.font = _inventoryGui.m_recipeDecription.font;
-        tmp.fontMaterial = _inventoryGui.m_recipeDecription.material;
-        tmp.alignment = TextAlignmentOptions.Center;
-        tmp.richText = true;
-        tmp.text = "INPUT TEXT";
-        tmp.fontSize = 14f;
-        tmp.enableAutoSizing = true;
-        tmp.fontSizeMin = 8f;
-        tmp.fontSizeMax = 14f;
-        
-        Object.DontDestroyOnLoad(element);
     }
 
     public override void Hide()
@@ -142,27 +127,56 @@ public class GridView : View
         }
     }
 
-    public void Setup(ConstructionWard ward, List<Piece.Requirement> requirements)
+    public void Setup(ConstructionWard ward, List<Piece.Requirement> requirements, bool breakStacks = false)
     {
         ClearList();
         for (int i = 0; i < requirements.Count; ++i)
         {
             Piece.Requirement requirement = requirements[i];
-            GameObject prefab = Object.Instantiate(instance.element, instance.layout.transform);
-            Image img = prefab.GetComponent<Image>();
-            TMP_Text txt = prefab.GetComponentInChildren<TMP_Text>();
-            int current = ward.m_container.GetInventory().CountItems(requirement.m_resItem.m_itemData.m_shared.m_name);
-            bool hasRequirement = current >= requirement.m_amount;
-            img.color = hasRequirement ? Color.white : Color.gray;
-            img.sprite = requirement.m_resItem.m_itemData.GetIcon();
-            txt.text = string.Format("{0}\n<color={1}>{2}</color> / <color=yellow>{3}</color>",
-                Localization.instance.Localize(requirement.m_resItem.m_itemData.m_shared.m_name), 
-                hasRequirement ? "yellow" : "red",
-                current,
-                requirement.m_amount
-                );
-            prefab.SetActive(true);
+            Sprite icon = requirement.m_resItem.m_itemData.GetIcon();
+            string name = requirement.m_resItem.m_itemData.m_shared.m_name;
+            int inventoryCount = ward.m_container.GetInventory().CountItems(requirement.m_resItem.m_itemData.m_shared.m_name);
+            int total = requirement.m_amount;
+
+            if (breakStacks && requirement.m_resItem.m_itemData.m_shared.m_maxStackSize < requirement.m_amount)
+            {
+                int maxStack = requirement.m_resItem.m_itemData.m_shared.m_maxStackSize;
+                int remaining = inventoryCount;
+                
+                while (total > maxStack)
+                {
+                    AddElement(icon, name, Math.Min(remaining, maxStack), maxStack);
+                    remaining = Math.Max(0, remaining - maxStack);
+                    total -= maxStack;
+                }
+                AddElement(icon, name, Math.Min(remaining, total), total);
+                
+            }
+            else
+            {
+                AddElement(icon, name, inventoryCount, total);
+            }
         }
+        
         Show();
+    }
+
+    private static void AddElement(Sprite sprite, string itemName, int count, int total)
+    {
+        GameObject prefab = Object.Instantiate(instance.element, instance.layout.transform);
+        Image icon = prefab.transform.Find("res_icon").GetComponent<Image>();
+        TMP_Text name = prefab.transform.Find("res_name").GetComponent<TMP_Text>();
+        TMP_Text amount = prefab.transform.Find("res_amount").GetComponent<TMP_Text>();
+        UITooltip tooltip = prefab.GetComponent<UITooltip>();
+        bool hasRequirement = total < count;
+        icon.color = hasRequirement ? Color.white : Color.gray;
+        icon.sprite = sprite;
+        name.text = Localization.instance.Localize(itemName);
+        tooltip.m_text = name.text;
+        amount.text = string.Format("<color={0}>{1}</color> / <color=yellow>{2}</color>",
+            hasRequirement ? "yellow" : "red",
+            count,
+            total);
+        prefab.SetActive(true);
     }
 }

@@ -4,8 +4,8 @@ Dream, Plan, Build
 
 --------------------
 
-Inspired by Plan Build: https://thunderstore.io/c/valheim/p/MathiasDecrock/PlanBuild/
-Inspired by Infinity Hammer: https://thunderstore.io/c/valheim/p/JereKuusela/Infinity_Hammer/
+- Inspired by Plan Build: https://thunderstore.io/c/valheim/p/MathiasDecrock/PlanBuild/
+- Inspired by Infinity Hammer: https://thunderstore.io/c/valheim/p/JereKuusela/Infinity_Hammer/
 
 I've taken my old blueprint mods and repacked into a single entity with new features.
 
@@ -72,5 +72,6 @@ will break, and convert back into a ghost piece.
 
 ## Notes
 
-When clients publish blueprints, they are sent to the server. The server manages all published blueprints and syncs it to all clients.
-Snapshots of blueprints will be generated if it does not exist. New icons will be saved in config folder to be used next time.
+- When clients publish blueprints, they are sent to the server. The server manages all published blueprints and syncs it to all clients.
+- Snapshots of blueprints will be generated if it does not exist. New icons will be saved in config folder to be used next time.
+- Player built pieces, when destroyed, will become ghosts

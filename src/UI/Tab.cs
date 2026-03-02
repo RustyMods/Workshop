@@ -23,6 +23,8 @@ public abstract class Tab
     public static bool tabUpgradeEnabled = true;
     public static ConstructionWard currentWard;
     public static CraftingStation currentStation;
+    
+    protected readonly InventoryGui _inventoryGui;
 
     public readonly int index;
     public readonly GameObject tabPrefab;
@@ -50,6 +52,8 @@ public abstract class Tab
     protected Tab(InventoryGui gui, string name, string tabLabel, int index = 0)
     {
         this.index = index;
+        _inventoryGui = gui;
+        
         GameObject craftTab = gui.m_tabCraft.gameObject;
         tabPrefab = Object.Instantiate(craftTab, craftTab.transform.parent);
         button = tabPrefab.GetComponent<Button>();
@@ -153,8 +157,28 @@ public abstract class Tab
         }
     }
 
-    public virtual void OnInventoryGuiHide()
+    protected void SetRecipeName(string name)
     {
+        _inventoryGui.m_recipeName.text = Localization.instance.Localize(name);
+        _inventoryGui.m_recipeName.enabled = true;
+    }
+
+    protected void SetDescription(string text)
+    {
+        _inventoryGui.m_recipeDecription.text = Localization.instance.Localize(text);
+        _inventoryGui.m_recipeDecription.enabled = true;
+    }
+
+    protected void SetRecipeIcon(Sprite icon)
+    {
+        _inventoryGui.m_recipeIcon.sprite = icon;
+        _inventoryGui.m_recipeIcon.enabled = true;
+    }
+
+    protected void SetCraftButton(string text, bool interactable)
+    {
+        craftButtonLabel.text = Localization.instance.Localize(text);
+        _inventoryGui.m_craftButton.interactable = interactable;
     }
 
     public static void SetBaseTabs(InventoryGui gui, Player player, bool craft = true, bool upgrade = true)

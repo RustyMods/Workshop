@@ -89,9 +89,9 @@ public class PiecesTab : Tab
         EnableMinStationLevelIcon(gui, false);
         EnableRecipeRequirementList(false);
         HideRequirements(gui);
-        gui.m_recipeIcon.sprite = currentWard.m_piece.m_icon;
-        gui.m_recipeDecription.text = StationTab.WardDescription.tooltip;
-        gui.m_recipeName.text = Localization.instance.Localize(ConstructionWard.SHARED_NAME);
+        SetRecipeName(ConstructionWard.SHARED_NAME);
+        SetDescription(StationTab.WardDescription.tooltip);
+        SetRecipeIcon(currentWard.m_piece.m_icon);
         ClearList(gui);
         ResizeList(gui);
         if (!isLoading && !currentWard.IsBuilding())
@@ -222,36 +222,8 @@ public class PiecesTab : Tab
                 List<Piece.Requirement> requirements = ward.GetTotalBuildRequirements();
                 GridView.instance.Setup(ward, requirements);
                 await Task.Delay(TimeSpan.FromMilliseconds(1), token);
-                bool noCost = player.NoCostCheat() || ZoneSystem.instance.GetGlobalKey(GlobalKeys.NoBuildCost);
-                List<CraftingStation> stations = ward.GetRequiredCraftingStations().ToList();
                 EnableRecipeRequirementList(true);
-                for (int i = 0; i < 4; ++i)
-                {
-                    Transform elementRoot = gui.m_recipeRequirementList[i].transform;
-                    if (i > stations.Count - 1)
-                    {
-                        InventoryGui.HideRequirement(elementRoot);
-                    }
-                    else
-                    {
-                        CraftingStation station = stations[i];
-                        Image icon = elementRoot.Find("res_icon").GetComponent<Image>();
-                        TMP_Text name = elementRoot.Find("res_name").GetComponent<TMP_Text>();
-                        TMP_Text amount = elementRoot.Find("res_amount").GetComponent<TMP_Text>();
-                        UITooltip tooltip = elementRoot.GetComponent<UITooltip>();
-                        bool hasStation = noCost || ward.HasCraftingStation(station);
-                        icon.gameObject.SetActive(true);
-                        name.gameObject.SetActive(true);
-                        amount.gameObject.SetActive(true);
-                        icon.sprite = station.m_icon;
-                        icon.color = Color.white;
-                        string localizedName = Localization.instance.Localize(station.m_name);
-                        name.text = localizedName;
-                        tooltip.m_text = localizedName;
-                        amount.text = hasStation ? "1" : "0";
-                        amount.color = hasStation ? new Color(1f, 0.5f, 0f, 1f) : Color.red;
-                    }
-                }
+                SetupRequirementList(player, ward, ward.GetRequiredCraftingStations().ToArray());
             }
             else
             {
@@ -267,6 +239,37 @@ public class PiecesTab : Tab
             isLoadingRequirements = false;
             loadingLength = 0f;
             loadingTimer = 0f;
+        }
+    }
+    
+    private void SetupRequirementList(Player player, ConstructionWard ward, params CraftingStation[] stations)
+    {
+        bool noCost = player.NoCostCheat() || ZoneSystem.instance.GetGlobalKey(GlobalKeys.NoBuildCost);
+        for (int i = 0; i < 4; ++i)
+        {
+            Transform elementRoot = _inventoryGui.m_recipeRequirementList[i].transform;
+            if (i > stations.Length - 1 || stations[i] == null)
+            {
+                InventoryGui.HideRequirement(elementRoot);
+            }
+            else
+            {
+                CraftingStation station = stations[i];
+                Image icon = elementRoot.Find("res_icon").GetComponent<Image>();
+                TMP_Text name = elementRoot.Find("res_name").GetComponent<TMP_Text>();
+                TMP_Text amount = elementRoot.Find("res_amount").GetComponent<TMP_Text>();
+                UITooltip tooltip = elementRoot.GetComponent<UITooltip>();
+                bool hasStation = noCost || ward.HasCraftingStation(station);
+                icon.gameObject.SetActive(true);
+                name.gameObject.SetActive(true);
+                amount.gameObject.SetActive(true);
+                icon.sprite = station.m_icon;
+                icon.color = hasStation ? Color.white : Color.gray;
+                string localizedName = Localization.instance.Localize(station.m_name);
+                name.text = localizedName;
+                tooltip.m_text = localizedName;
+                amount.text = "";
+            }
         }
     }
     
@@ -306,6 +309,7 @@ public class PiecesTab : Tab
             SetElement(gui, idx, true);
             UpdateSelectedPiece(gui, currentWard, data);
         });
+        
         InventoryGui.RecipeDataPair pair = new InventoryGui.RecipeDataPair
         {
             InterfaceElement = element
@@ -316,34 +320,15 @@ public class PiecesTab : Tab
     private void UpdateSelectedPiece(InventoryGui gui, ConstructionWard ward, ConstructionWard.PieceBlock element)
     {
         if (element.piece == null) return;
-        gui.m_recipeName.text = Localization.instance.Localize(element.piece.m_name + $" x{element.count}");
-        GridView.instance.Hide();
-        StringBuilder sb = new StringBuilder(256);
-        sb.Append($"{element.piece.m_description}\n");
-
-        if (element.piece.m_craftingStation != null && 
-            !ward.HasCraftingStation(element.piece.m_craftingStation))
-        {
-            sb.Append($"$tooltip_missing_station: <color=red>{element.piece.m_craftingStation.m_name}</color>\n");
-        }
         
-        List<Piece.Requirement> requirements = element.GetRequirements();
+        GridView.instance.Setup(ward, element.GetRequirements(), true);
+        
+        SetupRequirementList(Player.m_localPlayer, ward, element.piece.m_craftingStation);
 
-        for (int i = 0; i < requirements.Count; ++i)
-        {
-            Piece.Requirement requirement = requirements[i];
-            int count = currentWard.m_container.GetInventory().CountItems(requirement.m_resItem.m_itemData.m_shared.m_name);
-            sb.AppendFormat("{0}: <color={1}>{2}</color> / <color=yellow>{3}</color>\n",
-                requirement.m_resItem.m_itemData.m_shared.m_name,
-                count >= requirement.m_amount ? "orange" : "red",
-                requirement.m_amount,
-                count);
-        }
-        gui.m_recipeIcon.sprite = element.piece.m_icon;
-        gui.m_recipeDecription.text = Localization.instance.Localize(sb.ToString());
+        SetRecipeName(element.piece.m_name + $" x{element.count}");
+        
         bool isRemoved = element.IsDisabled(ward);
-        craftButtonLabel.text = Localization.instance.Localize(isRemoved ? "$label_add" : "$label_remove");
-        gui.m_craftButton.interactable = true;
+        SetCraftButton(isRemoved ? "$label_add" : "$label_remove", true);
     }
     
     [Obsolete]
