@@ -143,7 +143,8 @@ public class Workshop : BaseUnityPlugin, OnHideTextReceiver
         blueprint.Format(settings);
         blueprint.filename = settings.filename;
         blueprint.type = FileType.Blueprint;
-        blueprint.Write();
+        blueprint.filepath = Path.Combine(BlueprintMan.GetLocalPath(), blueprint.filename);
+        blueprint.Write(blueprint.filepath);
 
         BlueprintMan.localBlueprints[settings.filename] = blueprint;
 

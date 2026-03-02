@@ -95,7 +95,6 @@ public static class BlueprintMan
     // same blueprint can exist in temps and recipes, if so, do not load twice, simply transfer temp container to recipe container
     public static readonly Dictionary<string, TempBlueprint> temps;
     public static readonly Dictionary<string, BlueprintRecipe> recipes;
-    public static readonly Dictionary<string, string> blueprintFilePaths;
     public static readonly Dictionary<string, Blueprint> localBlueprints;
     public static readonly Dictionary<string, Blueprint> publishBlueprints;
     public static readonly Queue<ITask> tasks;
@@ -110,7 +109,6 @@ public static class BlueprintMan
         icons = new Dictionary<string, byte[]>();
         temps = new Dictionary<string, TempBlueprint>();
         recipes = new Dictionary<string, BlueprintRecipe>();
-        blueprintFilePaths = new Dictionary<string, string>();
         localBlueprints = new Dictionary<string, Blueprint>();
         publishBlueprints = new Dictionary<string, Blueprint>();
         tasks = new Queue<ITask>();
@@ -240,19 +238,20 @@ public static class BlueprintMan
             if (type == FileType.Unknown) continue;
             
             Blueprint blueprint = new Blueprint(filename, type, File.ReadAllLines(path));
+            blueprint.filepath = path;
 
             if (type == FileType.VBuild)
             {
-                BlueprintSettings settings = new  BlueprintSettings();
+                BlueprintSettings settings = new BlueprintSettings();
                 settings.Parse(blueprint);
                 blueprint.Format(settings);
-                blueprint.Write(Path.Combine(GetPublishPath(), Path.GetFileNameWithoutExtension(path) + ".blueprint"));
+                blueprint.filepath = Path.Combine(GetPublishPath(), Path.GetFileNameWithoutExtension(path) + ".blueprint");
+                blueprint.Write(blueprint.filepath);
                 File.Delete(path);
                 Workshop.LogDebug($"Formatted {filename} into .blueprint");
             }
             
             publishBlueprints[filename] = blueprint;
-            blueprintFilePaths[filename] = path;
         }
         
         string[] localPaths = Directory.GetFiles(GetLocalPath(), "*", SearchOption.AllDirectories);
@@ -272,19 +271,20 @@ public static class BlueprintMan
             if (type == FileType.Unknown) continue;
             
             Blueprint blueprint = new Blueprint(filename, type, File.ReadAllLines(path));
+            blueprint.filepath = path;
             
             if (type == FileType.VBuild)
             {
-                BlueprintSettings settings = new  BlueprintSettings();
+                BlueprintSettings settings = new BlueprintSettings();
                 settings.Parse(blueprint);
                 blueprint.Format(settings);
-                blueprint.Write(Path.Combine(GetLocalPath(), Path.GetFileNameWithoutExtension(path) + ".blueprint"));
+                blueprint.filepath = Path.Combine(GetLocalPath(), Path.GetFileNameWithoutExtension(path) + ".blueprint");
+                blueprint.Write(blueprint.filepath);
                 File.Delete(path);
                 Workshop.LogDebug($"Formatted {filename} into .blueprint");
             }
             
             localBlueprints[filename] = blueprint;
-            blueprintFilePaths[filename] = path;
         }
     }
 

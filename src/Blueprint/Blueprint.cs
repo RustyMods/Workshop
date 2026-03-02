@@ -9,6 +9,7 @@ namespace Workshop;
 public class Blueprint
 {
     public FileType type;
+    public string filepath = "";
     public string filename;
     public string[] lines;
     
@@ -80,13 +81,12 @@ public class Blueprint
         filename = settings.filename;
     }
     
-    public void Write(string filepath = "")
+    public void Write(string path = "")
     {
-        if (string.IsNullOrEmpty(filepath))
+        if (string.IsNullOrEmpty(path))
         {
-            filepath = Path.Combine(BlueprintMan.GetLocalPath(), filename);
+            path = Path.Combine(BlueprintMan.GetLocalPath(), filename);
         }
-        File.WriteAllLines(filepath, lines);
-        BlueprintMan.blueprintFilePaths[filename] = filepath;
+        File.WriteAllLines(path, lines);
     }
 }
