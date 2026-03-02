@@ -6,7 +6,7 @@ namespace Workshop;
 public static partial class Patches
 {
     [HarmonyPatch(typeof(Container), nameof(Container.GetHoverText))]
-    private static class Container_GetHoverText
+    private static class Container_GetHoverText_Patch
     {
         private static bool Prefix(Container __instance, ref string __result)
         {

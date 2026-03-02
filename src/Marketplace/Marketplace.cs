@@ -117,7 +117,6 @@ public static class Marketplace
         }
         else
         {
-            temp.blueprint.Write(); // save updated blueprint to local disk
             string text = ConfigManager.Serialize(task);
             ZRoutedRpc.instance.InvokeRoutedRPC(nameof(RPC_ReceiveBlueprint), text);
         }

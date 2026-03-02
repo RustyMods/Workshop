@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,7 +11,8 @@ namespace Workshop;
 public class PublishTab : Tab, OnHideTextReceiver
 {
     public static PublishTab instance;
-    private string currentPrice = "";
+    private Func<string> onGetText;
+    private Action<string> onSetText;
     private PieceRequirements currentRequirements;
     private TempBlueprint selectedBlueprint;
     public bool isTyping;
@@ -29,7 +32,6 @@ public class PublishTab : Tab, OnHideTextReceiver
 
     protected override void Reset()
     {
-        currentPrice = "";
         currentRequirements = null;
         confirming = false;
         confirmTimer = 0f;
@@ -42,7 +44,6 @@ public class PublishTab : Tab, OnHideTextReceiver
         base.OnCancel(gui);
         confirming = false;
         confirmTimer = 0f;
-        currentPrice = "";
         currentRequirements = null;
         gui.UpdateCraftingPanel();
         if (Player.m_localPlayer) Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$msg_publish_canceled");
@@ -58,9 +59,47 @@ public class PublishTab : Tab, OnHideTextReceiver
         }
         else
         {
-            TextInput.instance.RequestText(this, "$label_set_price", 100);
+            onGetText = () => selectedBlueprint.settings.Name;
+            onSetText = s =>
+            {
+                selectedBlueprint.settings.Name = s;
+                onGetText = () => selectedBlueprint.settings.Description;
+                onSetText = s2 =>
+                {
+                    selectedBlueprint.settings.Description = s2;
+
+                    onGetText = () => BlueprintMan.recipes.TryGetValue(selectedBlueprint.settings.filename,
+                        out BlueprintRecipe recipe) ? new PieceRequirements(recipe.settings.Requirements).ToCustomString() : 
+                        new PieceRequirements(selectedBlueprint.settings.Requirements).ToCustomString();
+                    onSetText = s3 =>
+                    {
+                        selectedBlueprint.settings.Requirements = s3;
+                        currentRequirements = new PieceRequirements(s3);
+                        selectedBlueprint.settings.Requirements = currentRequirements.ToCustomString();
+                        selectedBlueprint.settings.requirements.Clear();
+                        selectedBlueprint.settings.requirements.AddRange(currentRequirements.Requirements);
+                        craftButtonLabel.text = Localization.instance.Localize(craftLabel);
+                        craftButtonTooltip.m_text = Localization.instance.Localize(craftTooltip);
+                        SetupRequirementList(InventoryGui.instance, currentRequirements.ToPieceRequirement());
+                        
+                        isTyping = false;
+
+                        onGetText = null;
+                        onSetText = null;
+                    };
+                    _ = DelayedTask(0.5f, () => TextInput.instance.RequestText(this, "$label_set_price", 100));
+                };
+                _ = DelayedTask(0.5f, () => TextInput.instance.RequestText(this, "$label_set_description", 100));
+            };
+            TextInput.instance.RequestText(this, "$label_set_name", 100);
             isTyping = true;
         }
+    }
+
+    private async Task DelayedTask(float delay, Action action)
+    {
+        await Task.Delay(TimeSpan.FromSeconds(delay));
+        action.Invoke();
     }
 
     public override bool SetupCraftingPanel(InventoryGui gui, Player player, bool focusView)
@@ -108,7 +147,6 @@ public class PublishTab : Tab, OnHideTextReceiver
                 confirmTimer = 0f;
                 confirming = false;
                 currentRequirements = null;
-                currentPrice = "";
                 selectedBlueprint = null;
                 HideRequirements(gui);
                 gui.m_craftItemDoneEffects.Create(player.transform.position, Quaternion.identity);
@@ -151,6 +189,7 @@ public class PublishTab : Tab, OnHideTextReceiver
             SetElement(gui, idx, true);
             OnTempSelected(gui, blueprint);
         });
+        
         InventoryGui.RecipeDataPair pair = new InventoryGui.RecipeDataPair
         {
             InterfaceElement = element
@@ -169,15 +208,14 @@ public class PublishTab : Tab, OnHideTextReceiver
         if (BlueprintMan.recipes.TryGetValue(temp.settings.filename, out BlueprintRecipe recipe))
         {
             requirements = new PieceRequirements(recipe.settings.requirements);
-            SetCraftButtonLabel("$label_update_price");
+            SetCraftButtonLabel("$label_update");
         }
         else
         {
             requirements = new PieceRequirements(temp.settings.requirements);
-            SetCraftButtonLabel("$label_set_price");
+            SetCraftButtonLabel("$label_setup");
         }
         
-        currentPrice = requirements.ToCustomString();
         bool canSet = !Marketplace.IsBlueprintPendingCollection(temp.settings.filename);
         if (!canSet && Player.m_localPlayer)
         {
@@ -188,19 +226,10 @@ public class PublishTab : Tab, OnHideTextReceiver
         SetupRequirementList(gui, requirements.ToPieceRequirement());
         SetMinStationLevelIcon(gui, 0, defaultMinStationLevelIconColor, defaultMinStationLevelIcon);
     }
-    
-    public string GetText() => currentPrice;
 
-    public void SetText(string text)
-    {
-        currentPrice = text;
-        isTyping = false;
-        
-        currentRequirements = new PieceRequirements(text);
-        craftButtonLabel.text = Localization.instance.Localize(craftLabel);
-        craftButtonTooltip.m_text = Localization.instance.Localize(craftTooltip);
-        SetupRequirementList(InventoryGui.instance, currentRequirements.ToPieceRequirement());
-    }
+    public string GetText() => onGetText?.Invoke();
+
+    public void SetText(string text) => onSetText?.Invoke(text);
 
     public void OnHide()
     {
@@ -209,6 +238,8 @@ public class PublishTab : Tab, OnHideTextReceiver
     
     private static void SendToServer(Player player, TempBlueprint temp)
     {
+        temp.blueprint.Format(temp.settings);
+        temp.blueprint.Write(); // save updated blueprint to local disk
         Marketplace.SendBlueprintToServer(temp);
         player.Message(MessageHud.MessageType.Center, "$msg_sent_blueprint_to_server");
     }

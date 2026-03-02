@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Workshop;
 
-public abstract class ITool
+public abstract class  ITool
 {
     public static readonly Dictionary<Piece, ITool> m_toolPieces = new();
     

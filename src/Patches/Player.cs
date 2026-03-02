@@ -50,6 +50,11 @@ public static partial class Patches
             if (!__instance.GetRightItem().IsGhostHammer() && 
                 !__instance.GetRightItem().IsPlanHammer()) return true;
             
+            if (IPaint.IsPaintTool(piece))
+            {
+                return true;
+            }
+            
             if (Move.OnPlace(__instance, pos, rot, doAttack))
             {
                 return false;
@@ -58,11 +63,6 @@ public static partial class Patches
             if (ISelectMany.OnPlace(__instance, piece, pos, rot, doAttack))
             {
                 return false;
-            }
-
-            if (IPaint.IsPaintTool(piece))
-            {
-                return true;
             }
 
             if (__instance.GetRightItem().IsPlanHammer()) return true;

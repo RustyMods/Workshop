@@ -50,19 +50,31 @@ public class BlueprintTask : ITask
     public Blueprint blueprint;
     public override void Execute()
     {
-        if (BlueprintMan.publishBlueprints.ContainsKey(blueprint.filename)) return;
-        BlueprintRecipe recipe = ScriptableObject.CreateInstance<BlueprintRecipe>();
-        recipe.name = blueprint.filename;
-        recipe.settings.Parse(blueprint);
-
-        if (!BlueprintMan.temps.TryGetValue(blueprint.filename, out TempBlueprint existing) || 
-            !existing.TransferTo(recipe))
+        if (!BlueprintMan.recipes.TryGetValue(blueprint.filename, out BlueprintRecipe recipe))
         {
-            GameObject container = recipe.Load();
-            if (container == null) return;
-            recipe.PostProcess();
-            BuildTools.planHammer.AddPiece(container);
+            recipe = ScriptableObject.CreateInstance<BlueprintRecipe>();
+            recipe.name = blueprint.filename;
+            recipe.settings.Parse(blueprint);
+            
+            if (!BlueprintMan.temps.TryGetValue(blueprint.filename, out TempBlueprint existing) || 
+                !existing.TransferTo(recipe))
+            {
+                GameObject container = recipe.Load();
+                if (container == null) return;
+                recipe.PostProcess();
+                BuildTools.planHammer.AddPiece(container);
+            }
         }
+        else
+        {
+            recipe.settings.Parse(blueprint);
+            recipe.piece.m_name = recipe.settings.Name;
+            recipe.piece.m_description = recipe.settings.Description;
+            recipe.m_item.m_itemData.m_shared.m_name = recipe.settings.Name;
+            recipe.m_item.m_itemData.m_shared.m_description = $"Required resource to place blueprint {recipe.settings.Name}";
+            recipe.SetupResources();
+        }
+        
         blueprint.Write(Path.Combine(Path.Combine(BlueprintMan.GetPublishPath(), blueprint.filename))); // save or update blueprint locally
         BlueprintMan.publishBlueprints[blueprint.filename] = blueprint;
         BlueprintMan.recipes[blueprint.filename] = recipe;
@@ -228,6 +240,17 @@ public static class BlueprintMan
             if (type == FileType.Unknown) continue;
             
             Blueprint blueprint = new Blueprint(filename, type, File.ReadAllLines(path));
+
+            if (type == FileType.VBuild)
+            {
+                BlueprintSettings settings = new  BlueprintSettings();
+                settings.Parse(blueprint);
+                blueprint.Format(settings);
+                blueprint.Write(Path.Combine(GetPublishPath(), Path.GetFileNameWithoutExtension(path) + ".blueprint"));
+                File.Delete(path);
+                Workshop.LogDebug($"Formatted {filename} into .blueprint");
+            }
+            
             publishBlueprints[filename] = blueprint;
             blueprintFilePaths[filename] = path;
         }
@@ -249,6 +272,17 @@ public static class BlueprintMan
             if (type == FileType.Unknown) continue;
             
             Blueprint blueprint = new Blueprint(filename, type, File.ReadAllLines(path));
+            
+            if (type == FileType.VBuild)
+            {
+                BlueprintSettings settings = new  BlueprintSettings();
+                settings.Parse(blueprint);
+                blueprint.Format(settings);
+                blueprint.Write(Path.Combine(GetLocalPath(), Path.GetFileNameWithoutExtension(path) + ".blueprint"));
+                File.Delete(path);
+                Workshop.LogDebug($"Formatted {filename} into .blueprint");
+            }
+            
             localBlueprints[filename] = blueprint;
             blueprintFilePaths[filename] = path;
         }

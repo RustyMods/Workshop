@@ -96,3 +96,5 @@ piece_meadows_grass: Grass
 piece_meadows_grass_desc: Blend meadows grass
 piece_reset_all: Reset All
 piece_reset_all_desc: Reset terrain, vegetation and height modifications
+label_update: Update
+label_setup: Setup

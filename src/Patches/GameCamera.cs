@@ -21,17 +21,27 @@ public static partial class Patches
     [HarmonyPatch(typeof(GameCamera), nameof(GameCamera.UpdateCamera))]
     private static class GameCamera_UpdateCamera_Patch
     {
+        private static void FreezeCamera(GameCamera cam)
+        {
+            cam.m_minDistance = cam.m_distance;
+            cam.m_maxDistance = cam.m_distance;
+        }
+
+        private static void ResetCamera(GameCamera cam)
+        {
+            cam.m_minDistance = defaultCameraMinDistance;
+            cam.m_maxDistance = defaultCameraMaxDistance;
+        }
+        
         private static void Prefix(GameCamera __instance)
         {
             if (AreaProjector.instance != null || PaintOptions.instance != null)
             {
-                __instance.m_minDistance = __instance.m_distance;
-                __instance.m_maxDistance = __instance.m_distance;
+                FreezeCamera(__instance);
             }
             else
             {
-                __instance.m_minDistance = defaultCameraMinDistance;
-                __instance.m_maxDistance = defaultCameraMaxDistance;
+                ResetCamera(__instance);
             }
         }
         private static void Postfix(GameCamera __instance, float dt)
@@ -44,7 +54,7 @@ public static partial class Patches
                                      Player.m_localPlayer.GetRightItem().IsPlanHammer() &&
                                      Player.m_localPlayer.m_placementGhost != null && 
                                      Player.m_localPlayer.m_placementGhost.GetComponent<PlanContainer>();
-
+        
             if (!updateBuildCamera)
             {
                 __instance.m_maxDistance = Player.m_localPlayer.GetControlledShip() != null ? 
@@ -54,12 +64,12 @@ public static partial class Patches
             else
             {
                 __instance.m_maxDistance = ConfigManager.MaxCameraDistance;
-
+        
                 if (!ZInput.GetKey(KeyCode.LeftShift) && 
                     !ZInput.GetKeyDown(KeyCode.LeftShift)) return;
                 
                 float scroll = Mathf.Clamp(ZInput.GetMouseScrollWheel(), -0.05f, 0.05f);
-
+        
                 if (scroll == 0.0f) return;
                 __instance.m_distance -= scroll * __instance.m_zoomSens;
                 if (ZInput.GetButton("JoyAltKeys") && !Hud.InRadial())
@@ -73,7 +83,7 @@ public static partial class Patches
                         __instance.m_distance += __instance.m_zoomSens * dt;
                     }
                 }
-
+        
                 __instance.m_distance =
                     Mathf.Clamp(
                         __instance.m_distance, 
