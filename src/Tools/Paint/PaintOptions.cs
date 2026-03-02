@@ -51,6 +51,8 @@ public class PaintOptions : MonoBehaviour
 
     public void FixedUpdate()
     {
+        if (!Player.m_localPlayer) return;
+        
         float scroll = ZInput.GetMouseScrollWheel();
 
         if (UpdateSmooth(scroll) || 
