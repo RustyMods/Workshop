@@ -49,6 +49,9 @@ public static class PaintMan
                 nameof(Patch_ClutterSystem_GetPatchBiomes))));
         harmony.Patch(AccessTools.Method(typeof(ClutterSystem), nameof(ClutterSystem.GetGroundInfo)),
             prefix: new HarmonyMethod(AccessTools.Method(typeof(PaintMan), nameof(Patch_ClutterSystem_GetGroundInfo))));
+
+        harmony.Patch(AccessTools.Method(typeof(Character), nameof(Character.UpdateLava)),
+            postfix: new HarmonyMethod(AccessTools.Method(typeof(PaintMan), nameof(Patch_Character_UpdateLava))));
     }
 
     public static bool TryGetPaintType(string name, out TerrainModifier.PaintType paintType)
@@ -358,7 +361,7 @@ public static class PaintMan
         return colors[index];
     }
 
-    private static Heightmap.Biome GetBiomeFromMesh(
+    public static Heightmap.Biome GetBiomeFromMesh(
         this Heightmap hm, 
         Vector3 point, 
         float oceanLevel = 0.02f, 
@@ -457,5 +460,42 @@ public static class PaintMan
         }
         __result = __instance.GetGroundInfoByMesh(p, out point, out normal, out hmap, out biome);
         return biome == Heightmap.Biome.None;
+    }
+
+    private static void Patch_Character_UpdateLava(Character __instance, float dt)
+    {
+        if (__instance.m_tolerateFire) return;
+            
+        if (!TerrainColors.TryFindTerrainColors(__instance.transform.position, out TerrainColors colors)) return;
+        if (!colors.m_initialized) return;
+        
+        colors.m_terrainComp.m_hmap.WorldToVertex(__instance.transform.position, out int x, out int y);
+        int index = y * (colors.m_width + 1) + x;
+        bool modified = colors.m_modifiedTerrain[index];
+        if (!modified)
+        {
+            if (__instance.m_lavaHeatLevel > 0.0f)
+            {
+                __instance.m_lavaHeatLevel -= dt * __instance.m_heatCooldownBase;
+            }
+        }
+        else
+        {
+            Color32 color = colors.m_terrainMask[index];
+            if (color.r > 200 && color.a > 200)
+            {
+                __instance.m_lavaHeatLevel += dt * __instance.m_heatBuildupBase *
+                                              (1f - __instance.GetEquipmentHeatResistanceModifier());
+            }
+            else
+            {
+                if (__instance.m_lavaHeatLevel > 0.0f)
+                {
+                    __instance.m_lavaHeatLevel -= dt * __instance.m_heatCooldownBase;
+                }
+            }
+        }
+            
+        __instance.m_lavaHeatLevel = Mathf.Clamp(__instance.m_lavaHeatLevel, 0.0f, 1.0f);
     }
 }
