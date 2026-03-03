@@ -19,15 +19,23 @@ public class BlueprintRecipe : Recipe
     public void Dispose()
     {
         if (!Loaded) return;
-        UnityEngine.Object.Destroy(prefab);
-        UnityEngine.Object.Destroy(icon);
+        Destroy(prefab);
+        Destroy(icon);
+        if (m_item != null)
+        {
+            ObjectDB.instance.UnRegister(m_item.gameObject);
+            Destroy(m_item);
+        }
         prefab = null;
         icon = null;
         piece = null;
         Loaded = false;
+        this.UnRegister();
     }
+
+    public bool IsRegistered() => ObjectDB.instance.m_recipes.Contains(this);
     
-    public GameObject Load()
+    public GameObject Load(bool publish = true)
     {
         if (Loaded) return null;
 
@@ -51,10 +59,12 @@ public class BlueprintRecipe : Recipe
         int missing = 0;
         bool hasMissingPieces = false;
 
+        bool moveSnapPoints = settings.SnapPoints.Count <= 0;
+
         for (int i = 0; i < settings.Pieces.Count; ++i)
         {
             PlanPiece planPiece = settings.Pieces[i];
-            GameObject instance = planPiece.Create(prefab.transform, i);
+            GameObject instance = planPiece.Create(prefab.transform, i, moveSnapPoints);
             if (instance == null)
             {
                 Workshop.LogDebug($"[ Blueprint {settings.Name} ]: {planPiece.PrefabId} not found");
@@ -117,7 +127,24 @@ public class BlueprintRecipe : Recipe
             piece.m_icon = BuildTools.BlueprintIcon;
             doSnapshot = true;
         }
+        
+        m_craftingStation = BlueprintTable.CRAFTING_STATION;
+        m_repairStation = BlueprintTable.CRAFTING_STATION;
+        
+        Loaded = true;
+        prefab.SetActive(true);
+        
+        if (publish)
+        {
+            Publish();
+        }
+        return prefab;
+    }
 
+    public void Publish()
+    {
+        if (!Loaded) return;
+        
         m_item = BlueprintScroll.Create(this);
 
         piece.m_resources = new[]
@@ -129,14 +156,8 @@ public class BlueprintRecipe : Recipe
                 m_recover = false
             }
         };
-
-        m_craftingStation = BlueprintTable.CRAFTING_STATION;
-        m_repairStation = BlueprintTable.CRAFTING_STATION;
-        
+            
         this.Register();
-        Loaded = true;
-        prefab.SetActive(true);
-        return prefab;
     }
 
     public void SetupResources()

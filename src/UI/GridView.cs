@@ -11,9 +11,9 @@ public class GridView : View
 {
     public static GridView instance;
     
-    private GameObject element;
+    private readonly GameObject element;
 
-    private GridLayoutGroup layout;
+    private readonly GridLayoutGroup layout;
     private Scrollbar scrollbar;
     private ScrollRect scrollRect;
 

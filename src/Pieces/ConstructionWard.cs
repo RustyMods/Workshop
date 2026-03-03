@@ -32,7 +32,8 @@ public class ConstructionWard : MonoBehaviour
     public List<GhostPiece> m_ghostPieces = new();
     private readonly List<PieceBlock> m_disabledPieceData = new();
     private readonly Dictionary<string, PieceBlock> m_blocks = new();
-    private readonly Dictionary<string, Piece.Requirement> m_totalRequirements = new Dictionary<string, Piece.Requirement>();
+    private readonly PieceDict m_totalRequirements = new();
+    private readonly HashSet<CraftingStation> m_requiredStations = new();
     public bool reloadGhosts = true;
     public bool isSearching;
     public float ghostsCount;
@@ -102,13 +103,12 @@ public class ConstructionWard : MonoBehaviour
     {
         instances.Remove(this);
     }
-
     public void UpdateConnection()
     {
         stationsInRange = FindStationsInRange();
         StopConnectionEffect();
         if (stationsInRange.Count <= 0) return;
-        StartConnectionEffect(stationsInRange);
+        StartConnectionEffects(stationsInRange);
     }
     
     private List<CraftingStation> FindStationsInRange() 
@@ -134,12 +134,41 @@ public class ConstructionWard : MonoBehaviour
 
     private Vector3 GetConnectionPoint() => transform.TransformPoint(m_connectionOffset);
     
-    public void StartConnectionEffect(List<CraftingStation> stations)
+    public void StartConnectionEffects(List<CraftingStation> stations)
     {
         for (int i = 0; i < stations.Count; ++i)
         {
             CraftingStation station = stations[i];
-            StartConnectionEffect(station);
+            Vector3 targetPos = station.GetConnectionEffectPoint();
+            Vector3 connectionPoint = GetConnectionPoint();
+
+            if (!m_connections.TryGetValue(station.m_name, out StationData connection))
+            {
+                connection = new StationData(station, m_connectEffect, connectionPoint, transform);
+                m_connections[station.m_name] = connection;
+            }
+        
+            Vector3 distance = targetPos - connectionPoint;
+            Quaternion quaternion = Quaternion.LookRotation(distance.normalized);
+            connection.effectPrefab.transform.position = connectionPoint;
+            connection.effectPrefab.transform.rotation = quaternion;
+            connection.effectPrefab.transform.localScale = new Vector3(1f, 1f, distance.magnitude);
+        }
+    }
+    
+    public void StopConnectionEffect()
+    {
+        if (m_connections.Count <= 0) return;
+
+        List<KeyValuePair<string, StationData>> connections = new List<KeyValuePair<string, StationData>>(m_connections);
+        for (int i = 0; i < connections.Count; ++i)
+        {
+            KeyValuePair<string, StationData> kvp = connections[i];
+            if (!stationsInRange.Contains(kvp.Value.station))
+            {
+                Destroy(kvp.Value.effectPrefab);
+                m_connections.Remove(kvp.Key);
+            }
         }
     }
 
@@ -147,42 +176,6 @@ public class ConstructionWard : MonoBehaviour
     {
         if (station == null) return true;
         return m_connections.ContainsKey(station.m_name);
-    }
-
-    public void StartConnectionEffect(CraftingStation station)
-    {
-        Vector3 targetPos = station.GetConnectionEffectPoint();
-        Vector3 connectionPoint = GetConnectionPoint();
-
-        if (!m_connections.TryGetValue(station.m_name, out StationData connection))
-        {
-            connection = new StationData(station, m_connectEffect, connectionPoint, transform);
-            m_connections[station.m_name] = connection;
-        }
-        
-        Vector3 distance = targetPos - connectionPoint;
-        Quaternion quaternion = Quaternion.LookRotation(distance.normalized);
-        connection.effectPrefab.transform.position = connectionPoint;
-        connection.effectPrefab.transform.rotation = quaternion;
-        connection.effectPrefab.transform.localScale = new Vector3(1f, 1f, distance.magnitude);
-    }
-
-    public void StopConnectionEffect()
-    {
-        if (m_connections.Count <= 0) return;
-        List<string> connectionsToRemove = new();
-        foreach (KeyValuePair<string, StationData> kvp in m_connections)
-        {
-            if (!stationsInRange.Contains(kvp.Value.station))
-            {
-                Destroy(kvp.Value.effectPrefab);
-                connectionsToRemove.Add(kvp.Key);
-            }
-        }
-        foreach (string key in connectionsToRemove)
-        {
-            m_connections.Remove(key);
-        }
     }
     
     public void UpdateGhostPieces()
@@ -197,9 +190,11 @@ public class ConstructionWard : MonoBehaviour
         isSearching = true;
         ghostsCount = ghosts.Count + 1;
         ghostProcessed = 0.0f;
+        
         m_ghostPieces.Clear();
         m_blocks.Clear();
         m_totalRequirements.Clear();
+        m_requiredStations.Clear();
        
         for (int i = 0; i < ghosts.Count; ++i)
         {
@@ -217,15 +212,13 @@ public class ConstructionWard : MonoBehaviour
                 }
                 else
                 {
-                    PieceBlock block = new PieceBlock
-                    {
-                        piece = ghost.m_piece,
-                        count = 1
-                    };
-                    block.Add(ghost);
-
-                    m_blocks[ghost.m_piece.m_name] = block;
+                    m_blocks[ghost.m_piece.m_name] = new PieceBlock(ghost);
                 }
+            }
+
+            if (ghost.m_craftingStation != null)
+            {
+                m_requiredStations.Add(ghost.m_craftingStation);
             }
         }
 
@@ -235,20 +228,7 @@ public class ConstructionWard : MonoBehaviour
             for (int j = 0; j < reqs.Count; ++j)
             {
                 Piece.Requirement requirement = reqs[j];
-                string item = requirement.m_resItem.m_itemData.m_shared.m_name;
-                if (m_totalRequirements.TryGetValue(item, out Piece.Requirement req))
-                {
-                    req.m_amount += requirement.m_amount;
-                }
-                else
-                {
-                    Piece.Requirement res = new Piece.Requirement
-                    {
-                        m_resItem = requirement.m_resItem,
-                        m_amount = requirement.m_amount
-                    };
-                    m_totalRequirements.Add(item, res);
-                }
+                m_totalRequirements.Add(requirement);
             }
         }
         
@@ -261,40 +241,9 @@ public class ConstructionWard : MonoBehaviour
 
     public List<GhostPiece> GetGhostPieces() => m_ghostPieces;
     public List<PieceBlock> GetPieces() => m_blocks.Values.ToList();
-
-    public List<Piece.Requirement> GetTotalBuildRequirements()
-    {
-        return m_totalRequirements.Values.ToList();
-    }
-
-    public HashSet<CraftingStation> GetRequiredCraftingStations()
-    {
-        HashSet<CraftingStation> stations = new();
-        for (int i = 0; i < m_ghostPieces.Count; ++i)
-        {
-            GhostPiece ghost = m_ghostPieces[i];
-            if (ghost == null) continue;
-            if (ghost.TryGetCraftingStation(out CraftingStation station))
-            {
-                stations.Add(station);
-            }
-        }
-        return stations;
-    }
-
-    public List<CraftingStation> GetMissingCraftingStations()
-    {
-        HashSet<CraftingStation> stations = GetRequiredCraftingStations();
-        List<CraftingStation> missing = new();
-        foreach (CraftingStation station in stations)
-        {
-            if (!HasCraftingStation(station))
-            {
-                missing.Add(station);
-            }
-        }
-        return missing;
-    }
+    public List<Piece.Requirement> GetTotalBuildRequirements() => m_totalRequirements.Values.ToList();
+    public HashSet<CraftingStation> GetRequiredCraftingStations() => m_requiredStations;
+    public List<CraftingStation> GetMissingCraftingStations() => m_requiredStations.Where(s => !HasCraftingStation(s)).ToList();
 
     public void SetIsBuilding(bool value)
     {
@@ -319,7 +268,7 @@ public class ConstructionWard : MonoBehaviour
         
         m_activateEffect.Create(transform.position, transform.rotation);
         List<GhostPiece> pieces = new(m_ghostPieces);
-        List<GhostPiece> disabledPieces = m_disabledPieceData.SelectMany(p => p.ghosts).ToList();
+        List<GhostPiece> disabledPieces = m_disabledPieceData.SelectMany(p => p.GetGhosts()).ToList();
         pieces.RemoveAll(p => disabledPieces.Contains(p) || p == null);
         List<GhostPiece> order = pieces.OrderBy(p => p.transform.position.y).ToList();
 
@@ -400,19 +349,11 @@ public class ConstructionWard : MonoBehaviour
             {
                 if (m_blocks.TryGetValue(ghost.m_piece.m_name, out PieceBlock data))
                 {
-                    data.ghosts.Add(ghost);
-                    ++data.count;
+                    data.Add(ghost);
                 }
                 else
                 {
-                    PieceBlock pieceData = new PieceBlock
-                    {
-                        piece = ghost.m_piece,
-                        count = 1
-                    };
-                    pieceData.ghosts.Add(ghost);
-        
-                    m_blocks[ghost.m_piece.m_name] = pieceData;
+                    m_blocks[ghost.m_piece.m_name] = new PieceBlock(ghost);
                 }
             }
         }
@@ -440,52 +381,35 @@ public class ConstructionWard : MonoBehaviour
     
     private bool HaveBuildStation(GhostPiece ghost)
     {
-        if (!ghost.m_piece) return true;
-        return m_connections.ContainsKey(ghost.m_piece.m_craftingStation.m_name);
+        if (ghost.m_craftingStation == null) return true;
+        return m_connections.ContainsKey(ghost.m_craftingStation.m_name);
     }
 
     private bool HaveRequirements(GhostPiece ghost)
     {
-        if (!ghost.m_piece) return true;
+        if (ZoneSystem.instance.GetGlobalKey(ghost.m_piece.FreeBuildKey())) return true;
         if (!HaveBuildStation(ghost)) return false;
         if (ghost.m_piece.m_dlc.Length > 0 && !DLCMan.instance.IsDLCInstalled(ghost.m_piece.m_dlc)) return false;
 
-        if (ZoneSystem.instance.GetGlobalKey(ghost.m_piece.FreeBuildKey())) return true;
+        for (int i = 0; i < ghost.m_totalRequirements.Count; ++i)
+        {
+            Piece.Requirement res = ghost.m_totalRequirements[i];
+            int inventoryCount = m_container.GetInventory().CountItems(res.m_resItem.m_itemData.m_shared.m_name);
+            if (inventoryCount < res.m_amount) return false;
+        }
 
-        for (int i = 0; i < ghost.m_piece.m_resources.Length; ++i)
-        {
-            Piece.Requirement res = ghost.m_piece.m_resources[i];
-            int inventoryCount = m_container.GetInventory().CountItems(res.m_resItem.m_itemData.m_shared.m_name);
-            if (inventoryCount < res.m_amount) return false;
-        }
-        
-        for (int i = 0; i < ghost.m_otherRequirements.Length; ++i)
-        {
-            Piece.Requirement res = ghost.m_otherRequirements[i];
-            int inventoryCount = m_container.GetInventory().CountItems(res.m_resItem.m_itemData.m_shared.m_name);
-            if (inventoryCount < res.m_amount) return false;
-        }
-        
         return true;
     }
     
     public void ConsumeResources(GhostPiece ghost)
     {
-        if (!ghost.m_piece || ZoneSystem.instance.GetGlobalKey(ghost.m_piece.FreeBuildKey())) return;
-        for (int i = 0; i < ghost.m_piece.m_resources.Length; ++i)
+        if (ZoneSystem.instance.GetGlobalKey(ghost.m_piece.FreeBuildKey())) return;
+
+        for (int i = 0; i < ghost.m_totalRequirements.Count; ++i)
         {
-            Piece.Requirement res = ghost.m_piece.m_resources[i];
+            Piece.Requirement res = ghost.m_totalRequirements[i];
             m_container.GetInventory().RemoveItem(res.m_resItem.m_itemData.m_shared.m_name, res.m_amount);
         }
-        
-        if (ghost.m_otherRequirements != null)
-        {
-            for (int i = 0; i < ghost.m_otherRequirements.Length; ++i)
-            {
-                Piece.Requirement res = ghost.m_otherRequirements[i];
-                m_container.GetInventory().RemoveItem(res.m_resItem.m_itemData.m_shared.m_name, res.m_amount);
-            }
-        } 
     }
     
     public void SetEmission(Color color) => m_materials[0].SetColor(_EmissionColor, color );
@@ -501,9 +425,13 @@ public class ConstructionWard : MonoBehaviour
         }
         sb.Append($"\n$hover_connected_pieces ( {m_ghostPieces.Count} )");
         sb.Append("\n[<color=yellow><b>$KEY_Use</b></color>] $piece_container_open $msg_stackall_hover");
-        sb.AppendFormat("\n[<color=yellow><b>{0}</b></color>] {1}", 
-            "$button_lalt + $KEY_Use", 
-            isBuilding ? "$ward_cancel" : "$ward_build");
+
+        if (!isSearching)
+        {
+            sb.AppendFormat("\n[<color=yellow><b>{0}</b></color>] {1}", 
+                "$button_lalt + $KEY_Use", 
+                isBuilding ? "$ward_cancel" : "$ward_build");
+        }
         
         return Localization.instance.Localize(sb.ToString());
     }
@@ -520,12 +448,31 @@ public class ConstructionWard : MonoBehaviour
 
     public class PieceBlock
     {
-        public readonly List<GhostPiece> ghosts = new List<GhostPiece>();
-        public Piece piece;
+        private readonly List<GhostPiece> ghosts = new List<GhostPiece>();
+        private readonly PieceDict m_requirements = new();
+        public readonly CraftingStation station;
         public int count;
+        public readonly Sprite m_sprite;
+        public readonly string m_name;
+        
         public Image icon;
         public TMP_Text name;
-        public readonly List<Piece.Requirement> requirements = new List<Piece.Requirement>();
+
+        public PieceBlock(GhostPiece ghost)
+        {
+            m_name = ghost.m_piece?.m_name ?? ghost.name;
+            m_sprite = ghost.m_piece?.m_icon ?? BuildTools.BlueprintIcon;
+            station = ghost.m_craftingStation;
+            ghosts.Add(ghost);
+            count = 1;
+
+            for (int i = 0; i < ghost.m_totalRequirements.Count; ++i)
+            {
+                m_requirements.Add(ghost.m_totalRequirements[i]);
+            }
+        }
+        
+        public List<GhostPiece> GetGhosts() => ghosts;
 
         public bool IsDisabled(ConstructionWard ward) => ward.m_disabledPieceData.Contains(this);
 
@@ -534,33 +481,27 @@ public class ConstructionWard : MonoBehaviour
             if (ghosts.Contains(ghost)) return;
             ghosts.Add(ghost);
             ++count;
+            for (int i = 0; i < ghost.m_totalRequirements.Count; ++i)
+            {
+                m_requirements.Add(ghost.m_totalRequirements[i]);
+            }
         }
         
-        public void OnCraft(InventoryGui gui, ConstructionWard ward, string label)
+        public void OnToggle(InventoryGui gui, ConstructionWard ward, string label)
         {
             bool isRemoved = IsDisabled(ward);
+            List<Piece.Requirement> requirements = GetRequirements();
 
             if (isRemoved)
             {
                 ward.m_disabledPieceData.Remove(this);
                 icon.color = Color.white;
                 name.fontStyle = FontStyles.Normal;
-                foreach (Piece.Requirement requirement in requirements)
+
+                for (int i = 0; i < requirements.Count; ++i)
                 {
-                    if (ward.m_totalRequirements.TryGetValue(requirement.m_resItem.m_itemData.m_shared.m_name,
-                            out Piece.Requirement req))
-                    {
-                        req.m_amount += requirement.m_amount;
-                    }
-                    else
-                    {
-                        ward.m_totalRequirements[requirement.m_resItem.m_itemData.m_shared.m_name] =
-                            new Piece.Requirement
-                            {
-                                m_resItem = requirement.m_resItem,
-                                m_amount = requirement.m_amount
-                            };
-                    }
+                    Piece.Requirement requirement = requirements[i];
+                    ward.m_totalRequirements.Add(requirement);
                 }
             }
             else
@@ -568,13 +509,10 @@ public class ConstructionWard : MonoBehaviour
                 ward.m_disabledPieceData.Add(this);
                 icon.color = Color.black;
                 name.fontStyle = FontStyles.Strikethrough;
-                foreach (Piece.Requirement requirement in requirements)
+                for (int i = 0; i < requirements.Count; ++i)
                 {
-                    if (ward.m_totalRequirements.TryGetValue(requirement.m_resItem.m_itemData.m_shared.m_name,
-                            out Piece.Requirement req))
-                    {
-                        req.m_amount -= requirement.m_amount;
-                    }
+                    Piece.Requirement requirement = requirements[i];
+                    ward.m_totalRequirements.Remove(requirement);
                 }
             }
 
@@ -584,6 +522,9 @@ public class ConstructionWard : MonoBehaviour
 
         public bool HasRequirements(ConstructionWard ward)
         {
+            if (station != null && !ward.HasCraftingStation(station)) return false;
+            List<Piece.Requirement> requirements = GetRequirements();
+            
             for (int i = 0; i < requirements.Count; ++i)
             {
                 Piece.Requirement requirement = requirements[i];
@@ -596,60 +537,7 @@ public class ConstructionWard : MonoBehaviour
             return true;
         }
 
-        public List<Piece.Requirement> GetRequirements()
-        {
-            requirements.Clear();
-            for (int i = 0; i < piece.m_resources.Length; ++i)
-            {
-                Piece.Requirement req = piece.m_resources[i];
-                requirements.Add(new Piece.Requirement
-                {
-                    m_resItem = req.m_resItem,
-                    m_amount = req.m_amount * count
-                });
-            }
-
-            for (int i = 0; i < ghosts.Count; ++i)
-            {
-                GhostPiece ghost = ghosts[i];
-                if (ghost.m_otherRequirements.Length > 0)
-                {
-                    requirements.AddRange(ghost.m_otherRequirements);
-                }
-                
-                
-                
-                // if (ghost.itemStand != null &&
-                //     ghost.itemStand.TryGetPieceRequirement(out Piece.Requirement itemStandRequirement))
-                // {
-                //     requirements.Add(itemStandRequirement);
-                // }
-                // if (ghost.inventory.NrOfItems() <= 0) continue;
-                // AppendInventoryItems(ref requirements, ghost.inventory);
-            }
-            return requirements;
-        }
-
-        public bool RequiresStation(ConstructionWard ward, out CraftingStation station)
-        {
-            station = piece.m_craftingStation;
-            return station != null && !ward.HasCraftingStation(station);
-        }
-
-        private static void AppendInventoryItems(ref List<Piece.Requirement> requirements, Inventory inventory)
-        {
-            List<ItemDrop.ItemData> items = inventory.GetAllItems();
-            for (int i = 0; i < items.Count; ++i)
-            {
-                ItemDrop.ItemData item = items[i];
-                if (!PrefabManager.TryGetItemDrop(item.m_shared.m_name, out ItemDrop itemDrop)) continue;
-                requirements.Add(new Piece.Requirement
-                {
-                    m_resItem = itemDrop,
-                    m_amount = item.m_stack
-                });
-            }
-        }
+        public List<Piece.Requirement> GetRequirements() => m_requirements.Values.ToList();
     }
 
     private class StationData

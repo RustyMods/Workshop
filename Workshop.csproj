@@ -177,6 +177,7 @@
         <Compile Include="src\Patches\WearNTear.cs" />
         <Compile Include="src\Patches\ZNet.cs" />
         <Compile Include="src\Patches\ZNetView.cs" />
+        <Compile Include="src\PieceDict.cs" />
         <Compile Include="src\Pieces\BlueprintTable.cs" />
         <Compile Include="src\Pieces\ConstructionWard.cs" />
         <Compile Include="src\Pieces\TerrainFlag.cs" />

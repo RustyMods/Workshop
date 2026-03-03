@@ -28,7 +28,8 @@ public class GhostPiece : MonoBehaviour
     private readonly Dictionary<Collider, int> m_colliderLayers = new();
     public ZNetView m_nview;
     public Piece m_piece;
-    public Piece.Requirement[] m_otherRequirements = Array.Empty<Piece.Requirement>();
+    public List<Piece.Requirement> m_totalRequirements = new();
+    public CraftingStation m_craftingStation;
     public string zdo = string.Empty;
     public ItemStandItemData itemStand;
     public int state;
@@ -59,8 +60,10 @@ public class GhostPiece : MonoBehaviour
             m_piece.m_primaryTarget = false;
             m_piece.m_targetNonPlayerBuilt = false;
             m_piece.m_placeEffect = new EffectList();
+            m_totalRequirements.AddRange(m_piece.m_resources);
             m_piece.m_resources = Array.Empty<Piece.Requirement>();
             m_piece.m_comfort = 0;
+            m_craftingStation = m_piece.m_craftingStation;
             m_piece.m_craftingStation = null;
         }
     }
@@ -134,13 +137,7 @@ public class GhostPiece : MonoBehaviour
             otherReqs.Add(req);
         }
 
-        m_otherRequirements = otherReqs.ToArray();
-    }
-
-    public bool TryGetCraftingStation(out CraftingStation station)
-    {
-        station = m_piece ? m_piece.m_craftingStation : null;
-        return station != null;
+        m_totalRequirements.AddRange(otherReqs);
     }
 
     public void SetOrSaveZDOData()

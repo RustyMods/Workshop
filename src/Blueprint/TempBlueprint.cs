@@ -77,11 +77,13 @@ public class TempBlueprint
         
         int missing = 0;
         bool hasMissingPieces = false;
+        
+        bool moveSnapPoints = settings.SnapPoints.Count <= 0;
 
         for (int i = 0; i < settings.Pieces.Count; ++i)
         {
             PlanPiece planPiece = settings.Pieces[i];
-            GameObject instance = planPiece.Create(prefab.transform, i);
+            GameObject instance = planPiece.Create(prefab.transform, i, moveSnapPoints);
             if (instance == null)
             {
                 Workshop.LogDebug($"[ Blueprint {settings.Name} ]: {planPiece.PrefabId} not found");

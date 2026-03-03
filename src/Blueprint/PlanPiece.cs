@@ -71,7 +71,7 @@ public class PlanPiece
         }
     }
 
-    public GameObject Create(Transform parent, int index)
+    public GameObject Create(Transform parent, int index, bool moveSnapPoints = false)
     {
         GameObject source = PrefabManager.GetPrefab(PrefabId);
         if (source == null) return null;
@@ -98,6 +98,12 @@ public class PlanPiece
         temp.state = State;
         temp.width = width;
         temp.height = height;
+
+        if (moveSnapPoints)
+        {
+            PlanContainer.MoveSnapPoint(instance, parent);
+        }
+        
         instance.SetActive(true);
         return instance;
     }

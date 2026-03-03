@@ -5,10 +5,10 @@ namespace Workshop;
 
 public abstract class View
 {
-    private static List<View> _views = new();
+    private static readonly List<View> _views = new();
     
     protected GameObject _root;
-    protected InventoryGui _inventoryGui;
+    protected readonly InventoryGui _inventoryGui;
     protected bool _useDescription;
     protected bool _useIcon;
     protected bool _useName;

@@ -98,3 +98,4 @@ piece_reset_all: Reset All
 piece_reset_all_desc: Reset terrain, vegetation and height modifications
 label_update: Update
 label_setup: Setup
+label_building: Building...

@@ -209,7 +209,7 @@ public class PlanContainer : MonoBehaviour
         return component;
     }
     
-    private static void MoveSnapPoint(GameObject go, Transform parent)
+    public static void MoveSnapPoint(GameObject go, Transform parent)
     {
         if (!go.TryGetComponent(out Piece piece)) return;
         List<Transform> children = new();
