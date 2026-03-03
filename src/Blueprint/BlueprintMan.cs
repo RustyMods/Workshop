@@ -90,11 +90,16 @@ public static class BlueprintMan
     private static readonly string PublishPath;
     private static readonly string LocalPath;
     private static readonly string IconPath;
+    
     private static readonly CustomSyncedValue<string> sync;
     public static readonly Dictionary<string, byte[]> icons;
+    
     // same blueprint can exist in temps and recipes, if so, do not load twice, simply transfer temp container to recipe container
+    // game-ready blueprints
     public static readonly Dictionary<string, TempBlueprint> temps;
     public static readonly Dictionary<string, BlueprintRecipe> recipes;
+    
+    // serializable blueprints
     public static readonly Dictionary<string, Blueprint> localBlueprints;
     public static readonly Dictionary<string, Blueprint> publishBlueprints;
     public static readonly Queue<ITask> tasks;

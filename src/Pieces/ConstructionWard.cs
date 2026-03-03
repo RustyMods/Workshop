@@ -451,24 +451,14 @@ public class ConstructionWard : MonoBehaviour
             int inventoryCount = m_container.GetInventory().CountItems(res.m_resItem.m_itemData.m_shared.m_name);
             if (inventoryCount < res.m_amount) return false;
         }
-
-        if (ghost.inventory.NrOfItems() > 0)
+        
+        for (int i = 0; i < ghost.m_otherRequirements.Length; ++i)
         {
-            List<ItemDrop.ItemData> items = ghost.inventory.GetAllItems();
-            for (int i = 0; i < items.Count; ++i)
-            {
-                ItemDrop.ItemData item = items[i];
-                int inventoryCount = m_container.GetInventory().CountItems(item.m_shared.m_name);
-                if (inventoryCount < item.m_stack) return false;
-            }
+            Piece.Requirement res = ghost.m_otherRequirements[i];
+            int inventoryCount = m_container.GetInventory().CountItems(res.m_resItem.m_itemData.m_shared.m_name);
+            if (inventoryCount < res.m_amount) return false;
         }
-
-        if (ghost.itemStand != null &&
-            ghost.itemStand.TryGetPieceRequirement(out Piece.Requirement itemStandRequirement) && 
-            !m_container.GetInventory().HaveItem(itemStandRequirement.m_resItem.m_itemData.m_shared.m_name))
-        {
-            return false;
-        }
+        
         return true;
     }
     
@@ -480,22 +470,15 @@ public class ConstructionWard : MonoBehaviour
             Piece.Requirement res = ghost.m_piece.m_resources[i];
             m_container.GetInventory().RemoveItem(res.m_resItem.m_itemData.m_shared.m_name, res.m_amount);
         }
-
-        if (ghost.inventory.NrOfItems() > 0)
+        
+        if (ghost.m_otherRequirements != null)
         {
-            List<ItemDrop.ItemData> items = ghost.inventory.GetAllItems();
-            for (int i = 0; i < items.Count; ++i)
+            for (int i = 0; i < ghost.m_otherRequirements.Length; ++i)
             {
-                ItemDrop.ItemData item = items[i];
-                m_container.GetInventory().RemoveItem(item.m_shared.m_name, item.m_stack);
+                Piece.Requirement res = ghost.m_otherRequirements[i];
+                m_container.GetInventory().RemoveItem(res.m_resItem.m_itemData.m_shared.m_name, res.m_amount);
             }
-        }
-
-        if (ghost.itemStand != null &&
-            ghost.itemStand.TryGetPieceRequirement(out Piece.Requirement itemStandRequirement))
-        {
-            m_container.GetInventory().RemoveItem(itemStandRequirement.m_resItem.m_itemData.m_shared.m_name, itemStandRequirement.m_amount);
-        }
+        } 
     }
     
     public void SetEmission(Color color) => m_materials[0].SetColor(_EmissionColor, color );
@@ -535,7 +518,7 @@ public class ConstructionWard : MonoBehaviour
         public int count;
         public Image icon;
         public TMP_Text name;
-        public List<Piece.Requirement> requirements = new List<Piece.Requirement>();
+        public readonly List<Piece.Requirement> requirements = new List<Piece.Requirement>();
 
         public bool IsDisabled(ConstructionWard ward) => ward.m_disabledPieceData.Contains(this);
 
@@ -622,13 +605,20 @@ public class ConstructionWard : MonoBehaviour
             for (int i = 0; i < ghosts.Count; ++i)
             {
                 GhostPiece ghost = ghosts[i];
-                if (ghost.itemStand != null &&
-                    ghost.itemStand.TryGetPieceRequirement(out Piece.Requirement itemStandRequirement))
+                if (ghost.m_otherRequirements.Length > 0)
                 {
-                    requirements.Add(itemStandRequirement);
+                    requirements.AddRange(ghost.m_otherRequirements);
                 }
-                if (ghost.inventory.NrOfItems() <= 0) continue;
-                AppendInventoryItems(ref requirements, ghost.inventory);
+                
+                
+                
+                // if (ghost.itemStand != null &&
+                //     ghost.itemStand.TryGetPieceRequirement(out Piece.Requirement itemStandRequirement))
+                // {
+                //     requirements.Add(itemStandRequirement);
+                // }
+                // if (ghost.inventory.NrOfItems() <= 0) continue;
+                // AppendInventoryItems(ref requirements, ghost.inventory);
             }
             return requirements;
         }

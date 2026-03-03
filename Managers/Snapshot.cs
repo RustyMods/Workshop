@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEngine;
 
@@ -6,18 +7,9 @@ namespace Workshop;
 
 public static class Snapshot
 {
+    private static readonly Dictionary<GameObject, Sprite> m_cache = new();
+    
     private const int layer = 3;
-
-    public static void Run(GameObject prefab, string iconName, float lightIntensity = 1f, Quaternion? rotation = null)
-    {
-        if (TryCreate(prefab, out Sprite icon, lightIntensity, rotation))
-        {
-            icon.name = iconName;
-            byte[] bytes = icon.texture.EncodeToPNG();
-            string filePath = Path.Combine(BlueprintMan.GetIconPath(), icon.name + ".png");
-            File.WriteAllBytes(filePath, bytes);
-        }
-    }
 
     private static void CleanupVisual(GameObject visual)
     {
@@ -34,6 +26,12 @@ public static class Snapshot
     
     public static bool TryCreate(GameObject prefab, out Sprite icon, float lightIntensity = 1.3f, Quaternion? cameraRotation = null)
     {
+        if (m_cache.TryGetValue(prefab, out Sprite sprite))
+        {
+            icon = sprite;
+            return true;
+        }
+        
         icon = null;
         if (prefab == null) return false;
         if (!prefab.GetComponentsInChildren<Renderer>().Any() && !prefab.GetComponentsInChildren<MeshFilter>().Any())
@@ -57,7 +55,9 @@ public static class Snapshot
         sideLight.cullingMask = 1 << layer;
         sideLight.intensity = lightIntensity;
 
+        ZNetView.m_forceDisableInit = true;
         GameObject visual = Object.Instantiate(prefab);
+        ZNetView.m_forceDisableInit = false;
         CleanupVisual(visual);
 
         visual.transform.position = Vector3.zero;
@@ -125,6 +125,8 @@ public static class Snapshot
         Object.Destroy(sideLight);
         Object.Destroy(camera.gameObject);
         Object.Destroy(sideLight.gameObject);
+
+        m_cache[prefab] = icon;
 
         return true;
     }

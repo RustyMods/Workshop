@@ -63,15 +63,13 @@ public class Select : ITool
     {
         string id = Utils.GetPrefabName(obj.name);
         GameObject prefab = ZNetScene.instance.GetPrefab(id);
+        prefab.SetActive(false);
         
-        ZNetView.m_forceDisableInit = true;
         GameObject container = new GameObject(id);
         container.transform.SetParent(MockManager.transform);
         container.transform.position = Vector3.zero;
         container.transform.rotation = Quaternion.identity;
         
-        container.AddComponent<ZNetView>();
-        container.AddComponent<WearNTear>();
         Piece component = container.AddComponent<Piece>();
         component.m_icon = BuildTools.planHammer.GetIcon();
         component.m_name = id;
@@ -81,34 +79,65 @@ public class Select : ITool
         
         if (prefab != null)
         {
+            ZNetView.m_forceDisableInit = true;
+            TerrainOp.m_forceDisableTerrainOps = true;
             GameObject instance = Object.Instantiate(prefab, container.transform);
+            ZNetView.m_forceDisableInit = false;
+            TerrainOp.m_forceDisableTerrainOps = false;
+            instance.SetActive(false);
             instance.transform.localPosition = Vector3.zero;
             instance.transform.localRotation = Quaternion.identity;
             instance.name = id;
+            component.m_resources = TryGetPieceRequirements(prefab);
+            
+            instance.RemoveAllComponents();
+            instance.SetActive(true);
 
-            if (instance.TryGetComponent(out DropOnDestroyed dropOnDestroyed))
-            {
-                component.m_resources = ToPieceRequirements(dropOnDestroyed.m_dropWhenDestroyed);
-            }
-            else if (instance.TryGetComponent(out TreeBase tree))
-            {
-                component.m_resources = ToPieceRequirements(tree.m_dropWhenDestroyed);
-            }
-            else
-            {
-                component.m_resources = Array.Empty<Piece.Requirement>();
-            }
         }
-        else
-        {
-            component.m_resources = Array.Empty<Piece.Requirement>();
-        }
-        ZNetView.m_forceDisableInit = false;
-        
+
+        prefab.SetActive(true);
         return component;
     }
 
-    private static Piece.Requirement[] ToPieceRequirements(DropTable table)
+    public static Piece.Requirement[] TryGetPieceRequirements(GameObject gameObject)
+    {
+        if (gameObject == null) return Array.Empty<Piece.Requirement>();
+        
+        if (gameObject.TryGetComponent(out DropOnDestroyed dropOnDestroyed))
+        {
+            return ToPieceRequirements(dropOnDestroyed.m_dropWhenDestroyed);
+        }
+        if (gameObject.TryGetComponent(out TreeBase tree))
+        {
+            return ToPieceRequirements(tree.m_dropWhenDestroyed);
+        }
+        if (gameObject.TryGetComponent(out MineRock5 mineRock5))
+        {
+            return ToPieceRequirements(
+                mineRock5.m_dropItems, 
+                gameObject.GetComponentsInChildren<Collider>().Length);
+        }
+        if (gameObject.TryGetComponent(out MineRock mineRock))
+        {
+            return ToPieceRequirements(
+                mineRock.m_dropItems, 
+                gameObject.GetComponentsInChildren<Collider>().Length);
+        }
+
+        if (gameObject.TryGetComponent(out Destructible destructible) &&
+            destructible.m_spawnWhenDestroyed != null &&
+            destructible.m_spawnWhenDestroyed.TryGetComponent(out mineRock5))
+        {
+            return ToPieceRequirements(
+                mineRock5.m_dropItems, 
+                destructible.m_spawnWhenDestroyed.GetComponentsInChildren<Collider>().Length);
+        }
+
+        
+        return Array.Empty<Piece.Requirement>();
+    }
+
+    public static Piece.Requirement[] ToPieceRequirements(DropTable table, int multiplier = 1)
     {
         List<Piece.Requirement> requirements = new List<Piece.Requirement>();
         foreach (DropTable.DropData drop in table.m_drops)
@@ -118,7 +147,7 @@ public class Select : ITool
                 requirements.Add(new Piece.Requirement
                 {
                     m_resItem = item,
-                    m_amount = drop.m_stackMax
+                    m_amount = drop.m_stackMax * multiplier
                 });
             }
         }

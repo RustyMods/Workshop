@@ -21,23 +21,33 @@ public static partial class Patches
     [HarmonyPatch(typeof(Hud), nameof(Hud.SetupPieceInfo))]
     private static class Hud_SetupPieceInfo_Patch
     {
-        private static bool Prefix(Hud __instance, Piece piece)
-        {
-            if (!Player.m_localPlayer || piece == null) return true;
-            if (!Player.m_localPlayer.GetRightItem().IsGhostHammer()) return true;
-            if (piece.m_repairPiece || piece.m_removePiece) return true;
-            if (ITool.IsTool(piece) || IPaint.IsPaintTool(piece)) return true;
-
-            DisablePieceRequirements(__instance, piece);
-            
-            return false;
-        }
+        // private static bool Prefix(Hud __instance, Piece piece)
+        // {
+        //     if (!Player.m_localPlayer || piece == null) return true;
+        //     if (!Player.m_localPlayer.GetRightItem().IsGhostHammer()) return true;
+        //     if (piece.m_repairPiece || piece.m_removePiece) return true;
+        //     if (ITool.IsTool(piece) || IPaint.IsPaintTool(piece)) return true;
+        //
+        //     DisablePieceRequirements(__instance, piece);
+        //     
+        //     return false;
+        // }
 
         private static void Postfix(Hud __instance, Piece piece)
         {
+            if (piece == null) return;
+            
             if (IPaint.IsPaintTool(piece) && PaintOptions.instance != null)
             {
                 __instance.m_pieceDescription.text = PaintOptions.instance.m_pieceInfo;
+            }
+            else if (Player.m_localPlayer && 
+                     Player.m_localPlayer.GetRightItem().IsGhostHammer() && 
+                     !piece.m_repairPiece && 
+                     !piece.m_removePiece &&
+                     !ITool.IsTool(piece))
+            {
+                __instance.m_pieceDescription.text += "\n<color=red>GHOST PIECE</color>";
             }
         }
 

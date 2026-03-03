@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Workshop;
@@ -17,6 +18,7 @@ public class GhostPiece : MonoBehaviour
     private readonly Dictionary<Collider, int> m_colliderLayers = new();
     public ZNetView m_nview;
     public Piece m_piece;
+    public Piece.Requirement[] m_otherRequirements = Array.Empty<Piece.Requirement>();
     public string zdo = string.Empty;
     public ItemStandItemData itemStand;
     public int state;
@@ -34,6 +36,11 @@ public class GhostPiece : MonoBehaviour
         m_nview = GetComponent<ZNetView>();
         m_piece = GetComponent<Piece>();
 
+        if (m_piece == null)
+        {
+            SetupPiece();
+        }
+
         Collider[] colliders = GetComponentsInChildren<Collider>();
         for (int i = 0; i < colliders.Length; ++i)
         {
@@ -45,6 +52,22 @@ public class GhostPiece : MonoBehaviour
         {
             m_piece.m_primaryTarget = false;
             m_piece.m_targetNonPlayerBuilt = false;
+        }
+    }
+
+    private void SetupPiece()
+    {
+        m_piece = gameObject.AddComponent<Piece>();
+        m_piece.m_name = Utils.GetPrefabName(name);
+        GameObject source = PrefabManager.GetPrefab(m_piece.m_name);
+        if (source && Snapshot.TryCreate(source, out Sprite icon))
+        {
+            m_piece.m_icon = icon;
+        }
+        m_piece.m_resources = Select.TryGetPieceRequirements(source);
+        if (TryGetComponent(out Hoverable hoverable))
+        {
+            m_piece.m_name = hoverable.GetHoverName();
         }
     }
 
@@ -67,6 +90,28 @@ public class GhostPiece : MonoBehaviour
             SetOrSaveZDOData();
             m_nview.GetZDO().Set(GhostVars.IsGhost, true);
         }
+
+        List<Piece.Requirement> otherReqs = new();
+        List<ItemDrop.ItemData> items = inventory.GetAllItems();
+        for (int i = 0; i < items.Count; ++i)
+        {
+            ItemDrop.ItemData item = items[i];
+            if (PrefabManager.TryGetItemDrop(item.m_shared.m_name, out ItemDrop itemDrop))
+            {
+                otherReqs.Add(new Piece.Requirement
+                {
+                   m_resItem = itemDrop,
+                   m_amount = item.m_stack
+                });
+            }
+        }
+
+        if (itemStand != null && itemStand.TryGetPieceRequirement(out Piece.Requirement req))
+        {
+            otherReqs.Add(req);
+        }
+
+        m_otherRequirements = otherReqs.ToArray();
     }
 
     public bool TryGetCraftingStation(out CraftingStation station)
@@ -231,7 +276,6 @@ public class GhostPiece : MonoBehaviour
     public static void PlacePiece(Player player, GameObject prefab, Vector3 pos, Quaternion rot, bool doAttack, Plan plan = null)
     {
         if (prefab == null) return;
-        // Workshop.LogDebug($"Placed ghost piece: {prefab.name}");
         GameObject instance = Instantiate(prefab, pos, rot);
         instance.GetComponent<WearNTear>()?.OnPlaced();
         
