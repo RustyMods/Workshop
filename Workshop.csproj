@@ -166,7 +166,6 @@
         <Compile Include="src\Blueprint\PlanTerrain.cs" />
         <Compile Include="src\Marketplace\Marketplace.cs" />
         <Compile Include="src\Patches\Container.cs" />
-        <Compile Include="src\Patches\CraftingStation.cs" />
         <Compile Include="src\Patches\Game.cs" />
         <Compile Include="src\Patches\GameCamera.cs" />
         <Compile Include="src\Patches\Hud.cs" />
@@ -174,7 +173,6 @@
         <Compile Include="src\Patches\Piece.cs" />
         <Compile Include="src\Patches\PieceTable.cs" />
         <Compile Include="src\Patches\Player.cs" />
-        <Compile Include="src\Patches\StationExtension.cs" />
         <Compile Include="src\Patches\TextInput.cs" />
         <Compile Include="src\Patches\WearNTear.cs" />
         <Compile Include="src\Patches\ZNet.cs" />

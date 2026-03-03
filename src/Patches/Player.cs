@@ -43,6 +43,7 @@ public static partial class Patches
         return container != null;
     }
     
+    
     [HarmonyPatch(typeof(Player), nameof(Player.PlacePiece))]
     private static class Player_PlacePiece_Patch
     {
@@ -198,6 +199,20 @@ public static partial class Patches
     
             if (__instance.m_manualSnapPoint > 0) return;
             component.SetPosition(__instance.m_placementMarkerInstance.transform.position);
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.SetPlacementGhostValid))]
+    private static class Player_SetPlacementGhostValid_Patch
+    {
+        private static void Prefix(Player __instance, ref bool valid)
+        {
+            if (__instance.GetRightItem().IsGhostHammer() &&
+                __instance.m_placementStatus == Player.PlacementStatus.ExtensionMissingStation)
+            {
+                __instance.m_placementStatus = Player.PlacementStatus.Valid;
+                valid = true;
+            }
         }
     }
     

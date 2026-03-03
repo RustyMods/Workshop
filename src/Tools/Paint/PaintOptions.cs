@@ -73,7 +73,7 @@ public class PaintOptions : MonoBehaviour
             "\n[<color=orange>{0}</color> + <color=orange>{1}</color>] +- radius" +
             "\n[<color=orange>{0}</color> + <color=orange>{2}</color>] +- smooth" +
             "\n[<color=orange>{0}</color> + <color=orange>{3}</color>] +- raise" +
-            "\n[<color=orange>{0}</color> + <color=orange>{4}</color>] +- level", 
+            "\n[<color=orange>{0}</color> + <color=orange>{4}</color>] +- level\n", 
             "Scroll",
             KeyCode.LeftShift,
             KeyCode.Q,

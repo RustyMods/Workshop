@@ -44,12 +44,8 @@ public class GhostPiece : MonoBehaviour
     {
         m_instances.Add(this);
         m_nview = GetComponent<ZNetView>();
-        m_piece = GetComponent<Piece>();
-
-        if (m_piece == null)
-        {
-            MakePiece();
-        }
+        
+        if (!TryGetComponent(out m_piece)) MakePiece();
 
         Collider[] colliders = GetComponentsInChildren<Collider>(true);
         for (int i = 0; i < colliders.Length; ++i)
@@ -63,6 +59,9 @@ public class GhostPiece : MonoBehaviour
             m_piece.m_primaryTarget = false;
             m_piece.m_targetNonPlayerBuilt = false;
             m_piece.m_placeEffect = new EffectList();
+            m_piece.m_resources = Array.Empty<Piece.Requirement>();
+            m_piece.m_comfort = 0;
+            m_piece.m_craftingStation = null;
         }
     }
     
