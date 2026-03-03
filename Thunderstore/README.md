@@ -15,6 +15,7 @@ I've taken my old blueprint mods and repacked into a single entity with new feat
 - Save blueprints
 - Publish blueprints
 - Edit terrain
+- Move pieces
 
 ## Ghost Pieces
 
@@ -69,6 +70,10 @@ Pieces built are ordered by lowest to highest.
 
 During construction, piece support is ignored, but once done, the pieces will begin they individual check for support. If a piece does not have support, they
 will break, and convert back into a ghost piece.
+
+## Edit Terrain
+
+1. Paint biome color (i.e Ashlands Grass, Ashlands Lava)
 
 ## Notes
 

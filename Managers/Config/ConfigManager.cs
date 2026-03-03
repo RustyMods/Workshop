@@ -70,7 +70,6 @@ public static class ConfigManager
     private static ConfigEntry<Color> _ghostTint = null!;
     private static ConfigEntry<float> _fresnelPower = null!;
     private static ConfigEntry<float> _ghostPower = null!;
-    private static ConfigEntry<Toggle> _controlClutter = null!;
     private static ConfigEntry<Toggle> _showAllPieces = null!;
     
     public static float BuildInterval => _buildInterval.Value;
@@ -96,7 +95,6 @@ public static class ConfigManager
     public static Color GhostTint => _ghostTint.Value;
     public static float FresnelPower => _fresnelPower.Value;
     public static float GhostPower => _ghostPower.Value;
-    public static bool ControlClutter => _controlClutter.Value is Toggle.On;
     
     public static bool ShowAllPieces => _showAllPieces.Value is Toggle.On;
     public static void Start()
@@ -239,10 +237,7 @@ public static class ConfigManager
         _ghostHammerRecipe = config("4 - Build Hammer", "Requirements",
             new PieceRequirements(new Requirement("Wood", 10)).ToString(),
             new ConfigDescription("Set Build hammer recipe", null, PieceRequirements.attributes));
-
-        _controlClutter = config("5 - Terrain", "Clutter Override", Toggle.On,
-            "If on, terrain grass will be set based off ground instead of zone");
-
+        
         _showAllPieces = config("2 - Settings", "All Pieces", Toggle.Off,
             "If on, ghost hammer will display hidden game pieces");
         

@@ -302,15 +302,6 @@ public static class PaintMan
     private static void Patch_TerrainComp_Save(TerrainComp __instance) => __instance.GetComponent<TerrainColors>()?.Save();
 
     private static void Patch_TerrainComp_Load(TerrainComp __instance) => __instance.GetComponent<TerrainColors>()?.Load();
-    
-    [Obsolete][HarmonyPostfix]
-    private static void Patch_Heightmap_RebuildRenderMesh(Heightmap __instance)
-    {
-        if (__instance.m_isDistantLod || __instance.m_renderMesh == null) return;
-        
-        if (!TerrainColors.TryFindTerrainColors(__instance.transform.position, out TerrainColors component)) return;
-        component.ApplyToHeightmap(__instance);
-    }
 
     private static IEnumerable<CodeInstruction> Transpile_Heightmap_RebuildRenderMesh(
         IEnumerable<CodeInstruction> instructions)
@@ -349,19 +340,8 @@ public static class PaintMan
             }
         }
     }
-    
-    private static Color32 GetBiomeColorFromMesh(this Heightmap hm, int x, int y)
-    {
-        List<Color32> colors = new List<Color32>();
-        hm.m_renderMesh.GetColors(colors);
-        if (colors.Count <= 0) return new Color32(0, 0, 0, 0);
-        if (x < 0 || y < 0 || x >= hm.m_width || y >= hm.m_width) return colors[0];
-        int index = x * (hm.m_width + 1) + y;
-        if (index > colors.Count - 1) return colors[0];
-        return colors[index];
-    }
 
-    public static Heightmap.Biome GetBiomeFromMesh(
+    private static Heightmap.Biome GetBiomeFromMesh(
         this Heightmap hm, 
         Vector3 point, 
         float oceanLevel = 0.02f, 
@@ -436,7 +416,6 @@ public static class PaintMan
 
     private static bool Patch_ClutterSystem_GetPatchBiomes(Vector3 center, float halfSize, ref Heightmap.Biome __result)
     {
-        if (!ConfigManager.ControlClutter) return true;
         __result = GetPatchBiomesByMesh(center, halfSize);
         return __result == Heightmap.Biome.None;
     }
@@ -450,14 +429,6 @@ public static class PaintMan
         out Heightmap.Biome biome, 
         ref bool __result)
     {
-        if (!ConfigManager.ControlClutter)
-        {
-            point = p;
-            normal = Vector3.up;
-            hmap = null;
-            biome = Heightmap.Biome.None;
-            return true;
-        }
         __result = __instance.GetGroundInfoByMesh(p, out point, out normal, out hmap, out biome);
         return biome == Heightmap.Biome.None;
     }
@@ -474,7 +445,7 @@ public static class PaintMan
         bool modified = colors.m_modifiedTerrain[index];
         if (!modified)
         {
-            if (__instance.m_lavaHeatLevel > 0.0f)
+            if (!WorldGenerator.IsAshlands(__instance.transform.position.x, __instance.transform.position.z))
             {
                 __instance.m_lavaHeatLevel -= dt * __instance.m_heatCooldownBase;
             }
@@ -482,17 +453,17 @@ public static class PaintMan
         else
         {
             Color32 color = colors.m_terrainMask[index];
-            if (color.r > 200 && color.a > 200)
+            Color paint = colors.m_terrainComp.m_paintMask[index];
+            bool isLava = color.r > 200 && color.a > 200 && paint.a > 0.6f;
+            
+            if (isLava)
             {
                 __instance.m_lavaHeatLevel += dt * __instance.m_heatBuildupBase *
                                               (1f - __instance.GetEquipmentHeatResistanceModifier());
             }
             else
             {
-                if (__instance.m_lavaHeatLevel > 0.0f)
-                {
-                    __instance.m_lavaHeatLevel -= dt * __instance.m_heatCooldownBase;
-                }
+                __instance.m_lavaHeatLevel -= dt * __instance.m_heatCooldownBase;
             }
         }
             

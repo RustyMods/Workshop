@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using HarmonyLib;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using Object = UnityEngine.Object;
 
 namespace Workshop;
 
@@ -45,7 +49,7 @@ public abstract class Tab
     public bool isTableTab = false;
     public bool isWardTab = false;
 
-    private readonly Vector3 basePosition;
+    private readonly Vector2 basePosition;
     
     public static implicit operator bool(Tab tab) => tab != null;
 
@@ -69,7 +73,7 @@ public abstract class Tab
         selected = rect.Find("Selected").gameObject;
         selectedLabel = rect.Find("Selected/Text (1)").GetComponent<TMP_Text>();
         hint = rect.Find("gamepad_hint/Text").GetComponent<TMP_Text>();
-        basePosition = rect.localPosition;
+        basePosition = rect.anchoredPosition;
         this.tabLabel = tabLabel;
         SetLabel(tabLabel);
         PlaceTab();
@@ -80,11 +84,10 @@ public abstract class Tab
     {
         int num = craftTabVisible ? 0 : 1;
         num += upgradeTabVisible ? 0 : 1;
-        
-        rect.localPosition = new Vector3(
+
+        rect.anchoredPosition = new Vector2(
             basePosition.x + spacing * (index - num), 
-            basePosition.y, 
-            basePosition.z);
+            basePosition.y);
     }
 
     protected virtual void OnClick()
@@ -204,6 +207,18 @@ public abstract class Tab
             Tab tab = tabs[i];
             tab.PlaceTab(craftTabVisible, upgradeTabVisible);
         }
+        
+        // if (InventoryGui.instance.m_tabCraft.transform.parent.Find("VNEI") is RectTransform vnei)
+        // {
+        //     int index = 0;
+        //     for (int i = 0; i < vnei.parent.childCount; ++i)
+        //     {
+        //         var child =  vnei.parent.GetChild(i);
+        //         if (!child.gameObject.activeSelf) continue;
+        //         ++index;
+        //     }
+        //     vnei.localPosition = new Vector3(tabs[0].basePosition.x + spacing * index, -94f, 0f);
+        // }
     }
 
     protected static GameObject CreateListElement(InventoryGui gui, int index, 
@@ -272,11 +287,13 @@ public abstract class Tab
     protected static void ClearList(InventoryGui gui)
     {
         gui.m_tempRecipes.Clear();
-        for (int i = 0; i < gui.m_availableRecipes.Count; ++i)
+
+        for (int i = 0; i < gui.m_recipeListRoot.childCount; ++i)
         {
-            InventoryGui.RecipeDataPair element = gui.m_availableRecipes[i];
-            Object.Destroy(element.InterfaceElement);
+            Transform child = gui.m_recipeListRoot.GetChild(i);
+            Object.Destroy(child.gameObject);
         }
+        
         gui.m_availableRecipes.Clear();
     }
 

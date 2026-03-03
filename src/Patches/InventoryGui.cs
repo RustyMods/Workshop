@@ -10,6 +10,7 @@ public static partial class Patches
     [HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Awake))]
     private static class InventoryGui_Awake_Patch
     {
+        [HarmonyAfter("com.maxsch.valheim.vnei")]
         private static void Postfix(InventoryGui __instance)
         {
             Tab.listRoot = __instance.m_recipeRequirementList[0].transform.parent;
@@ -136,18 +137,13 @@ public static partial class Patches
         private static bool Prefix(InventoryGui __instance, bool focusView)
         {
             Tab.ResetCraftingPanel(__instance);
-
+            Tab.UpdateTabPlacement(
+                __instance.m_tabCraft.gameObject.activeSelf,
+                __instance.m_tabUpgrade.gameObject.activeSelf);
             return !Player.m_localPlayer ||
                    !Tab.currentTab ||
                    !Tab.currentTab.InTab() ||
                    !Tab.currentTab.SetupCraftingPanel(__instance, Player.m_localPlayer, focusView);
-        }
-
-        private static void Finalizer(InventoryGui __instance)
-        {
-            Tab.UpdateTabPlacement(
-                __instance.m_tabCraft.gameObject.activeSelf,
-                __instance.m_tabUpgrade.gameObject.activeSelf);
         }
     }
     
