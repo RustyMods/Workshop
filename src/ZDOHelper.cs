@@ -75,9 +75,9 @@ public static class ZDOHelper
 
     public static void LoadDoorState(ZDO ZDO, GameObject instance, int state)
     {
-        ZDO.Set(ZDOVars.s_state, state);
         if (instance.TryGetComponent(out Door door))
         {
+            ZDO.Set(ZDOVars.s_state, state);
             door.SetState(state);
         }
     }

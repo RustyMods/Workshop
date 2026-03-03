@@ -54,49 +54,43 @@ public class Select : ITool
         }
         else
         {
-            ISelectMany.tempPiece = SetupPiece(hovering);
+            GameObject prefab = PrefabManager.GetPrefab(Utils.GetPrefabName(hovering.name));
+            if (prefab == null) return;
+            
+            ISelectMany.tempPiece = SetupPiece(prefab);
             player.SetupPlacementGhost();
         }
     }
 
     private static Piece SetupPiece(GameObject obj)
     {
-        string id = Utils.GetPrefabName(obj.name);
-        GameObject prefab = ZNetScene.instance.GetPrefab(id);
-        prefab.SetActive(false);
-        
-        GameObject container = new GameObject(id);
+        GameObject container = new GameObject(obj.name);
         container.transform.SetParent(MockManager.transform);
         container.transform.position = Vector3.zero;
         container.transform.rotation = Quaternion.identity;
         
-        Piece component = container.AddComponent<Piece>();
-        component.m_icon = BuildTools.planHammer.GetIcon();
-        component.m_name = id;
-        component.m_category = Piece.PieceCategory.Misc;
-        component.m_extraPlacementDistance = 100;
+        Piece piece = container.AddComponent<Piece>();
+        piece.m_icon = BuildTools.planHammer.GetIcon();
+        piece.m_name = obj.name;
+        piece.m_category = Piece.PieceCategory.Misc;
+        piece.m_extraPlacementDistance = 100;
         container.AddComponent<PlanContainer>();
         
-        if (prefab != null)
-        {
-            ZNetView.m_forceDisableInit = true;
-            TerrainOp.m_forceDisableTerrainOps = true;
-            GameObject instance = Object.Instantiate(prefab, container.transform);
-            ZNetView.m_forceDisableInit = false;
-            TerrainOp.m_forceDisableTerrainOps = false;
-            instance.SetActive(false);
-            instance.transform.localPosition = Vector3.zero;
-            instance.transform.localRotation = Quaternion.identity;
-            instance.name = id;
-            component.m_resources = TryGetPieceRequirements(prefab);
+        ZNetView.m_forceDisableInit = true;
+        TerrainOp.m_forceDisableTerrainOps = true;
+        GameObject instance = Object.Instantiate(obj, container.transform);
+        ZNetView.m_forceDisableInit = false;
+        TerrainOp.m_forceDisableTerrainOps = false;
+        instance.SetActive(false);
+        instance.transform.localPosition = Vector3.zero;
+        instance.transform.localRotation = Quaternion.identity;
+        instance.name = obj.name;
+        piece.m_resources = TryGetPieceRequirements(obj);
             
-            instance.RemoveAllComponents();
-            instance.SetActive(true);
+        instance.RemoveAllComponents();
+        instance.SetActive(true);
 
-        }
-
-        prefab.SetActive(true);
-        return component;
+        return piece;
     }
 
     public static Piece.Requirement[] TryGetPieceRequirements(GameObject gameObject)
@@ -132,7 +126,6 @@ public class Select : ITool
                 mineRock5.m_dropItems, 
                 destructible.m_spawnWhenDestroyed.GetComponentsInChildren<Collider>().Length);
         }
-
         
         return Array.Empty<Piece.Requirement>();
     }

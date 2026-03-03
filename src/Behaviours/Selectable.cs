@@ -10,7 +10,7 @@ public class Selectable : MonoBehaviour
 
     public Piece m_piece;
 
-    public void Awake()
+    public void Start()
     {
         m_piece = GetComponent<Piece>();
     }

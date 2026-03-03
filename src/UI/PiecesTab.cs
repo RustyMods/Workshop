@@ -55,12 +55,6 @@ public class PiecesTab : Tab
     {
         selectedPiece = null;
         base.Reset();
-        
-        if (cancelToken == null) return;
-        
-        cancelToken.Cancel();
-        cancelToken.Dispose();
-        cancelToken = null;
     }
 
     public override void OnCancel(InventoryGui gui)
@@ -159,8 +153,11 @@ public class PiecesTab : Tab
         }
         finally
         {
-            cancelToken.Dispose();
-            cancelToken = null;
+            if (cancelToken != null)
+            {
+                cancelToken.Dispose();
+                cancelToken = null;
+            }
             loadingLength = 0;
             loadingTimer = 0.0f;
             isLoading = false;
@@ -182,11 +179,28 @@ public class PiecesTab : Tab
 
             if (ward.LoadingGhostTask != null)
             {
-                await ward.LoadingGhostTask;
+                try
+                {
+                    await ward.LoadingGhostTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    Workshop.LogDebug("Loading ghost pieces cancelled");
+                    GridView.instance.Hide();
+                    isLoading = false;
+                    isLoadingRequirements = false;
+                    loadingLength = 0f;
+                    loadingTimer = 0f;
+                    if (cancelToken != null)
+                    {
+                        cancelToken.Dispose();
+                        cancelToken = null;
+                    }
+                }
             }
 
             List<ConstructionWard.PieceBlock> pieces = ward.GetPieces();
-            TimeSpan delay = TimeSpan.FromMilliseconds(1f);
+            // TimeSpan delay = TimeSpan.FromMilliseconds(1f);
             loadingLength = pieces.Count;
             loadingTimer = 1f;
             string pieceLocalized = Localization.instance.Localize("$ward_pieces");
@@ -198,7 +212,7 @@ public class PiecesTab : Tab
                 pieceCount += data.ghosts.Count;
                 AddPiece(gui, ward, data, i);
                 gui.m_recipeName.text = $"{pieceLocalized} ({pieceCount})";
-                await Task.Delay(delay, token);
+                // await Task.Delay(delay, token);
             }
         }
         catch (OperationCanceledException)
@@ -209,6 +223,11 @@ public class PiecesTab : Tab
             isLoadingRequirements = false;
             loadingLength = 0f;
             loadingTimer = 0f;
+            if (cancelToken != null)
+            {
+                cancelToken.Dispose();
+                cancelToken = null;
+            }
         }
     }
     
@@ -239,6 +258,11 @@ public class PiecesTab : Tab
             isLoadingRequirements = false;
             loadingLength = 0f;
             loadingTimer = 0f;
+            if (cancelToken != null)
+            {
+                cancelToken.Dispose();
+                cancelToken = null;
+            }
         }
     }
     

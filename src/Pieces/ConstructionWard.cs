@@ -298,12 +298,14 @@ public class ConstructionWard : MonoBehaviour
 
     public void SetIsBuilding(bool value)
     {
-        m_nview.GetZDO().Set(WardVars.isBuilding, value);
+        if (m_nview && m_nview.IsValid()) m_nview.GetZDO().Set(WardVars.isBuilding, value);
     }
 
     public bool IsBuilding() => m_nview.IsValid() ? m_nview.GetZDO().GetBool(WardVars.isBuilding) : isBuilding;
     public void Build(Player player)
     {
+        if (isSearching) return;
+        
         if (AreBuilding())
         {
             Workshop.LogDebug("Cannot build, already processing");
@@ -314,6 +316,7 @@ public class ConstructionWard : MonoBehaviour
             UpdateGhostPieces();
             return;
         }
+        
         m_activateEffect.Create(transform.position, transform.rotation);
         List<GhostPiece> pieces = new(m_ghostPieces);
         List<GhostPiece> disabledPieces = m_disabledPieceData.SelectMany(p => p.ghosts).ToList();
@@ -329,12 +332,13 @@ public class ConstructionWard : MonoBehaviour
 
     public void Cancel()
     {
+        SetIsBuilding(false);
+
         if (cancelToken == null) return;
         
         cancelToken.Cancel();
         cancelToken.Dispose();
         cancelToken = null;
-        SetIsBuilding(false);
     }
 
     private async Task Process(Player player, List<GhostPiece> pieces, CancellationToken cancellationToken = default)
@@ -371,8 +375,11 @@ public class ConstructionWard : MonoBehaviour
             m_constructionTimer = 0f;
             reloadGhosts = true;
             isBuilding = false;
-            cancelToken.Dispose();
-            cancelToken = null;
+            if (cancelToken != null)
+            {
+                cancelToken.Dispose();
+                cancelToken = null;
+            }
             SetIsBuilding(false);
             if (Tab.currentWard) InventoryGui.instance.UpdateCraftingPanel();
         }

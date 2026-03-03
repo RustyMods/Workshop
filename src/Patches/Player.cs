@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using UnityEngine;
@@ -252,21 +253,7 @@ public static partial class Patches
             }
         }
     }
-
-    [HarmonyPatch(typeof(Player), nameof(Player.RemovePiece))]
-    private static class Player_RemovePiece_Patch
-    {
-        private static void Postfix(Player __instance, ref bool __result)
-        {
-            if (!__instance.GetRightItem().IsGhostHammer()) return;
-
-            if (Select.hovering == null || !Select.hovering.GetComponent<GhostPiece>()) return;
-            if (!Select.hovering.TryGetComponent(out ZNetView view)) return;
-            view.ClaimOwnership();
-            view.Destroy();
-            __result = true;
-        }
-    }
+    
 
     // [HarmonyPatch(typeof(Character), nameof(Character.UpdateLava))]
     // private static class Character_UpdateLava_Patch

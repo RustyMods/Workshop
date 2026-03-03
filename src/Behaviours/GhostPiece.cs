@@ -14,6 +14,16 @@ public static class GhostVars
 public class GhostPiece : MonoBehaviour
 {
     public static readonly List<GhostPiece> m_instances = new();
+
+    private static readonly List<Type> componentsToPreserve = new()
+    { 
+        typeof(Selectable), 
+        typeof(GhostPiece), 
+        typeof(Piece), 
+        typeof(ZNetView), 
+        typeof(Plan) ,
+        typeof(Ghost)
+    };
     
     private readonly Dictionary<Collider, int> m_colliderLayers = new();
     public ZNetView m_nview;
@@ -22,7 +32,7 @@ public class GhostPiece : MonoBehaviour
     public string zdo = string.Empty;
     public ItemStandItemData itemStand;
     public int state;
-    public Inventory inventory = new Inventory("GhostInventory", null, 8, 5);
+    private Inventory inventory = new Inventory("GhostInventory", null, 8, 5);
     
     public TerrainModifier.PaintType m_type;
     public bool m_isSquare;
@@ -38,10 +48,10 @@ public class GhostPiece : MonoBehaviour
 
         if (m_piece == null)
         {
-            SetupPiece();
+            MakePiece();
         }
 
-        Collider[] colliders = GetComponentsInChildren<Collider>();
+        Collider[] colliders = GetComponentsInChildren<Collider>(true);
         for (int i = 0; i < colliders.Length; ++i)
         {
             Collider collider = colliders[i];
@@ -52,10 +62,18 @@ public class GhostPiece : MonoBehaviour
         {
             m_piece.m_primaryTarget = false;
             m_piece.m_targetNonPlayerBuilt = false;
+            m_piece.m_placeEffect = new EffectList();
         }
     }
+    
+    public void OnDestroy()
+    {
+        m_instances.Remove(this);
+        GhostMan.UnRegister(gameObject);
+        ConstructionWard.OnGhostPiecesChanged();
+    }
 
-    private void SetupPiece()
+    private void MakePiece()
     {
         m_piece = gameObject.AddComponent<Piece>();
         m_piece.m_name = Utils.GetPrefabName(name);
@@ -84,13 +102,19 @@ public class GhostPiece : MonoBehaviour
     {
         ConstructionWard.OnGhostPiecesChanged();
         GhostMan.Register(gameObject);
-        DisableOrRemoveComponents();
+
+        SetupOtherRequirements();
+        DisableComponents();
+        
         if (m_nview && m_nview.GetZDO() != null)
         {
             SetOrSaveZDOData();
             m_nview.GetZDO().Set(GhostVars.IsGhost, true);
         }
+    }
 
+    private void SetupOtherRequirements()
+    {
         List<Piece.Requirement> otherReqs = new();
         List<ItemDrop.ItemData> items = inventory.GetAllItems();
         for (int i = 0; i < items.Count; ++i)
@@ -100,8 +124,8 @@ public class GhostPiece : MonoBehaviour
             {
                 otherReqs.Add(new Piece.Requirement
                 {
-                   m_resItem = itemDrop,
-                   m_amount = item.m_stack
+                    m_resItem = itemDrop,
+                    m_amount = item.m_stack
                 });
             }
         }
@@ -168,13 +192,50 @@ public class GhostPiece : MonoBehaviour
         }
     }
 
+    public void DisableComponents()
+    {
+        MonoBehaviour[] components = GetComponentsInChildren<MonoBehaviour>(true);
+        for (int i = 0; i < components.Length; ++i)
+        {
+            MonoBehaviour component = components[i];
+            if (componentsToPreserve.Contains(component.GetType())) continue;
+            Destroy(component);
+        }
+
+        EnableColliders(false);
+
+        if (m_nview.m_functions.ContainsKey("RPC_SetFuelAmount".GetStableHashCode()))
+        {
+            m_nview.InvokeRPC("RPC_SetFuelAmount", 0f);
+            m_nview.GetZDO().RemoveInt(ZDOVars.s_state);
+        }
+    }
+    
+    public void EnableColliders(bool enable)
+    {
+        foreach (KeyValuePair<Collider, int> kvp in m_colliderLayers)
+        {
+            if (enable)
+            {
+                kvp.Key.gameObject.layer = kvp.Value;
+            }
+            else
+            {
+                if (kvp.Key.isTrigger) continue;
+                
+                kvp.Key.gameObject.layer = LayerMask.NameToLayer("piece_nonsolid");
+            }
+        }
+    }
+
+    [Obsolete]
     public void DisableOrRemoveComponents()
     {
         RemoveComponent<Rigidbody>();
         RemoveComponent<Humanoid>();
         RemoveComponent<MonsterAI>();
         RemoveComponent<BaseAI>();
-
+        
         EnableColliders(false);
         EnableParticles(false);
         EnableComponent<ParticleSystemForceField>(false);
@@ -216,41 +277,28 @@ public class GhostPiece : MonoBehaviour
         RemoveComponent<CookingStation>();
         RemoveComponent<Fermenter>();
         RemoveComponent<Smelter>();
+        RemoveComponent<CraftingStation>();
+        RemoveComponent<StationExtension>();
     }
     
-    public void EnableColliders(bool enable)
-    {
-        foreach (KeyValuePair<Collider, int> kvp in m_colliderLayers)
-        {
-            if (enable)
-            {
-                kvp.Key.gameObject.layer = kvp.Value;
-            }
-            else
-            {
-                if (kvp.Key.isTrigger) continue;
-                
-                kvp.Key.gameObject.layer = LayerMask.NameToLayer("piece_nonsolid");
-            }
-        }
-    }
-
-    public void EnableParticles(bool enable)
+    [Obsolete]
+    private void EnableParticles(bool enable)
     {
         foreach (ParticleSystem component in GetComponentsInChildren<ParticleSystem>(true))
         {
             component.Stop();
         }
-
     }
     
-    public void EnableFirePlace(bool enable)
+    [Obsolete]
+    private void EnableFirePlace(bool enable)
     {
         if (!TryGetComponent(out Fireplace component)) return;
         if (!enable) component.SetFuel(0f);
     }
 
-    public void EnableComponent<T>(bool enable) where T : Behaviour
+    [Obsolete]
+    private void EnableComponent<T>(bool enable) where T : Behaviour
     {
         foreach (T component in GetComponentsInChildren<T>(true))
         {
@@ -258,21 +306,17 @@ public class GhostPiece : MonoBehaviour
         }
     }
 
-    public void RemoveComponent<T>() where T : Component
+    [Obsolete]
+    private void RemoveComponent<T>() where T : Component
     {
         foreach (T component in GetComponentsInChildren<T>(true))
         {
             Destroy(component);
         }
     }
-
-    public void OnDestroy()
-    {
-        m_instances.Remove(this);
-        GhostMan.UnRegister(gameObject);
-        ConstructionWard.OnGhostPiecesChanged();
-    }
-
+    
+    
+    // Static
     public static void PlacePiece(Player player, GameObject prefab, Vector3 pos, Quaternion rot, bool doAttack, Plan plan = null)
     {
         if (prefab == null) return;
