@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Workshop;
@@ -133,19 +134,26 @@ public class TerrainColors : MonoBehaviour
 
     public Heightmap.Biome GetBiome(Heightmap hm, Vector3 point)
     {
-        hm.WorldToVertex(point, out int x, out int y);
-        int index = y * (hm.m_width + 1) + x;
-        bool modified = m_modifiedTerrain[index];
-        if (!modified) return hm.GetBiome(point);
-        Color32 color = m_terrainMask[index];
-        if (color is { r: > 200, a: > 200 }) return Heightmap.Biome.AshLands;
-        if (color is { b: > 200, a: > 200 }) return Heightmap.Biome.Mistlands;
-        
-        if (color.r > 200) return Heightmap.Biome.Swamp;
-        if (color.g > 200) return Heightmap.Biome.Mountain | Heightmap.Biome.DeepNorth;
-        if (color.b > 200) return Heightmap.Biome.BlackForest;
-        if (color.a > 200) return Heightmap.Biome.Plains;
-        return Heightmap.Biome.Meadows;
+        try
+        {
+            hm.WorldToVertex(point, out int x, out int y);
+            int index = y * (hm.m_width + 1) + x;
+            bool modified = m_modifiedTerrain[index];
+            if (!modified) return hm.GetBiome(point);
+            Color32 color = m_terrainMask[index];
+            if (color is { r: > 200, a: > 200 }) return Heightmap.Biome.AshLands;
+            if (color is { b: > 200, a: > 200 }) return Heightmap.Biome.Mistlands;
+
+            if (color.r > 200) return Heightmap.Biome.Swamp;
+            if (color.g > 200) return Heightmap.Biome.Mountain | Heightmap.Biome.DeepNorth;
+            if (color.b > 200) return Heightmap.Biome.BlackForest;
+            if (color.a > 200) return Heightmap.Biome.Plains;
+            return Heightmap.Biome.Meadows;
+        }
+        catch (IndexOutOfRangeException)
+        {
+            return hm.GetBiome(point);
+        }
     }
 
     public static bool TryFindTerrainColors(Vector3 pos, out TerrainColors instance)

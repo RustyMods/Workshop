@@ -57,7 +57,7 @@ public class PlanContainer : MonoBehaviour
                 .Select(m => m != null ? $"{m.name}_{m.shader.name}" : "null"));
 
             if (!map.ContainsKey(key))
-                map[key] = (renderer.sharedMaterials, new List<MeshFilter>());
+                map[key] = (renderer.sharedMaterials, []);
 
             map[key].meshes.Add(filter);
         }
@@ -82,8 +82,10 @@ public class PlanContainer : MonoBehaviour
                 filter.gameObject.SetActive(false);
             }
 
-            Mesh mesh = new Mesh();
-            mesh.indexFormat = IndexFormat.UInt32;
+            Mesh mesh = new Mesh
+            {
+                indexFormat = IndexFormat.UInt32
+            };
             mesh.CombineMeshes(combineInstances.ToArray(), mergeSubMeshes: true);
             mesh.UploadMeshData(markNoLongerReadable: true);
             
@@ -272,7 +274,7 @@ public class PlanContainer : MonoBehaviour
     public static void MoveSnapPoint(GameObject go, Transform parent)
     {
         if (!go.TryGetComponent(out Piece piece)) return;
-        List<Transform> children = new();
+        List<Transform> children = [];
         piece.GetSnapPoints(children);
         for (int i = 0; i < children.Count; ++i)
         {
