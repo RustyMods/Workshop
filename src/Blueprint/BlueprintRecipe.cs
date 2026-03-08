@@ -60,7 +60,7 @@ public class BlueprintRecipe : Recipe
         bool hasMissingPieces = false;
 
         bool moveSnapPoints = settings.SnapPoints.Count <= 0;
-
+        
         for (int i = 0; i < settings.Pieces.Count; ++i)
         {
             PlanPiece planPiece = settings.Pieces[i];
@@ -133,6 +133,8 @@ public class BlueprintRecipe : Recipe
         
         Loaded = true;
         prefab.SetActive(true);
+        
+        planContainer.CombineMeshes();
         
         if (publish)
         {

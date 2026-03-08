@@ -67,7 +67,7 @@ public class TempBlueprint
         prefab.transform.SetParent(MockManager.transform);
         prefab.transform.position = Vector3.zero;
         prefab.transform.rotation = Quaternion.identity;
-        prefab.AddComponent<PlanContainer>();
+        var planContainer =  prefab.AddComponent<PlanContainer>();
         MockManager.temp.Add(prefab);
 
         piece = prefab.AddComponent<Piece>();
@@ -151,6 +151,9 @@ public class TempBlueprint
         
         Loaded = true;
         prefab.SetActive(true);
+        
+        planContainer.CombineMeshes();
+        
         return prefab;
     }
     

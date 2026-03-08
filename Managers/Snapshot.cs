@@ -106,8 +106,9 @@ public static class Snapshot
 
             // boost saturation and brightness
             Color.RGBToHSV(pixels[i], out float h, out float s, out float v);
+            float alpha = pixels[i].a;
             pixels[i] = Color.HSVToRGB(h, Mathf.Clamp01(s * 1.3f), Mathf.Clamp01(v * 1.2f));
-            pixels[i].a = pixels[i+0].a; // preserve alpha
+            pixels[i].a = alpha; 
         }
         previewImage.SetPixels(pixels);
         previewImage.Apply();

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Workshop;
 
@@ -13,13 +14,14 @@ public class PlanContainer : MonoBehaviour
     public float m_lowestPoint;
     public Piece m_piece;
     public BlueprintRecipe m_recipe;
-    public List<Transform> m_snapPoints = new();
-    public List<Piece> m_pieces = new();
-    public List<Selectable> m_selectables = new();
-    public List<PlanTerrain> m_terrains = new();
-    public List<Renderer> m_renderers = new();
-    public List<MeshFilter> m_meshFilters = new();
+    public List<Transform> m_snapPoints = [];
+    public List<Piece> m_pieces = [];
+    public List<Selectable> m_selectables = [];
+    public List<PlanTerrain> m_terrains = [];
+    public List<Renderer> m_renderers = [];
+    public List<MeshFilter> m_meshFilters = [];
     public bool isLocalPlayerCreator;
+    public bool isCombined;
     public void Awake()
     {
         m_piece = GetComponent<Piece>();
@@ -36,6 +38,62 @@ public class PlanContainer : MonoBehaviour
     {
         isLocalPlayerCreator = m_recipe == null || 
                                m_recipe.settings.Creator.Equals(Game.instance.m_playerProfile.m_playerName);
+    }
+
+    public void CombineMeshes()
+    {
+        if (isCombined) return;
+        
+        MeshRenderer[] meshRenderers = GetComponentsInChildren<MeshRenderer>();
+        Dictionary<string, (Material[] mats, List<MeshFilter> meshes)> map = new();
+
+        foreach (MeshRenderer renderer in meshRenderers)
+        {
+            if (!renderer.TryGetComponent(out MeshFilter filter)) continue;
+            if (renderer.sharedMaterials == null || renderer.sharedMaterials.Length == 0) continue;
+            if (!filter.sharedMesh.isReadable) continue;
+
+            string key = string.Join("|", renderer.sharedMaterials
+                .Select(m => m != null ? $"{m.name}_{m.shader.name}" : "null"));
+
+            if (!map.ContainsKey(key))
+                map[key] = (renderer.sharedMaterials, new List<MeshFilter>());
+
+            map[key].meshes.Add(filter);
+        }
+
+        int i = 0;
+        foreach ((Material[] mats, List<MeshFilter> meshes) in map.Values)
+        {
+            GameObject combinedObj = new GameObject($"___combinedMesh ({++i})");
+            combinedObj.transform.SetParent(transform);
+            combinedObj.transform.localPosition = Vector3.zero;
+            combinedObj.transform.localRotation = Quaternion.identity;
+            Matrix4x4 inverse = combinedObj.transform.localToWorldMatrix.inverse;
+            
+            List<CombineInstance> combineInstances = new();
+            foreach (MeshFilter filter in meshes)
+            {
+                combineInstances.Add(new CombineInstance
+                {
+                    mesh = filter.sharedMesh,
+                    transform = inverse * filter.transform.localToWorldMatrix
+                });
+                filter.gameObject.SetActive(false);
+            }
+
+            Mesh mesh = new Mesh();
+            mesh.indexFormat = IndexFormat.UInt32;
+            mesh.CombineMeshes(combineInstances.ToArray(), mergeSubMeshes: true);
+            mesh.UploadMeshData(markNoLongerReadable: true);
+            
+            combinedObj.AddComponent<MeshFilter>().sharedMesh = mesh;
+            combinedObj.AddComponent<MeshRenderer>().sharedMaterials = mats;
+
+            Workshop.LogDebug($"Combined {combineInstances.Count} meshes with {mats.Length} material(s)");
+
+            isCombined = true;
+        }
     }
 
     public void OnDestroy()
@@ -205,6 +263,8 @@ public class PlanContainer : MonoBehaviour
         component.m_resources = Array.Empty<Piece.Requirement>();
         component.m_extraPlacementDistance = 100;
         container.SetActive(true);
+        
+        plan.CombineMeshes();
         
         return component;
     }

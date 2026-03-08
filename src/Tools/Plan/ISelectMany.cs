@@ -7,8 +7,8 @@ public abstract class ISelectMany : ITool
 {
     protected const int MaxSelectionSize = 6000;
 
-    public static readonly List<Piece> SelectTools = new();
-    public static readonly List<Piece> RemoveTools = new();
+    public static readonly List<Piece> SelectTools = [];
+    public static readonly List<Piece> RemoveTools = [];
     public static Piece tempPiece;
 
     protected ISelectMany(string id, string name, int index = 0) : base(id, name, index)
@@ -34,6 +34,7 @@ public abstract class ISelectMany : ITool
         for (int i = 0; i < player.m_placementGhost.transform.childCount; ++i)
         {
             Transform child = player.m_placementGhost.transform.GetChild(i);
+            if (child.name.StartsWith("___combinedMesh")) continue;
             GameObject prefab = ZNetScene.instance.GetPrefab(child.name);
             if (prefab == null) continue;
             GhostPiece.PlacePiece(player, prefab, child.position, child.rotation, false, child.GetComponent<Plan>());

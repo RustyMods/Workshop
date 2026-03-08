@@ -207,18 +207,6 @@ public abstract class Tab
             Tab tab = tabs[i];
             tab.PlaceTab(craftTabVisible, upgradeTabVisible);
         }
-        
-        // if (InventoryGui.instance.m_tabCraft.transform.parent.Find("VNEI") is RectTransform vnei)
-        // {
-        //     int index = 0;
-        //     for (int i = 0; i < vnei.parent.childCount; ++i)
-        //     {
-        //         var child =  vnei.parent.GetChild(i);
-        //         if (!child.gameObject.activeSelf) continue;
-        //         ++index;
-        //     }
-        //     vnei.localPosition = new Vector3(tabs[0].basePosition.x + spacing * index, -94f, 0f);
-        // }
     }
 
     protected static GameObject CreateListElement(InventoryGui gui, int index, 
